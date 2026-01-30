@@ -8,7 +8,8 @@ export async function testGeminiKey() {
         if (!key) return { success: false, message: "No key found in environment" };
 
         const genAI = new GoogleGenerativeAI(key);
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+        // Use gemini-2.5-flash-lite for testing
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
         const result = await model.generateContent("Hello, are you working?");
         const response = await result.response;

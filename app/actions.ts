@@ -81,9 +81,9 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
 
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
     try {
-        // Use Gemini Flash for fast translation
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-        const prompt = `Translate the following text accurately into ${targetLanguage}. Maintain the original meaning and tone, but make it natural for a native speaker of ${targetLanguage}. Do not add explanations, just return the translated text.\n\nText: "${text}"`;
+        // Use gemini-2.5-flash-lite as verified working model with quota
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        const prompt = `Translate the following text accurately into ${targetLanguage}. Maintain the original meaning and tone, but make it natural for a native speaker of ${targetLanguage}. Do not add explanations, just return the translated text.\n\nText: "${text.substring(0, 5000)}"`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
@@ -95,10 +95,14 @@ export async function translateText(text: string, targetLanguage: string): Promi
 }
 
 export async function translateAnalaysisResult(data: any, targetLanguage: string): Promise<any> {
+    // gemini-2.5-flash-lite is the verified working model
+    const models = ["gemini-2.5-flash-lite"];
+
     const runTranslation = async (retryCount = 0): Promise<any> => {
         try {
-            // Using flash-latest as primary. Retrying same model is often enough for transient errors.
-            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+            const currentModelName = models[0];
+            const model = genAI.getGenerativeModel({ model: currentModelName });
+
             const prompt = `
             Translate the values of the following document analysis JSON object into ${targetLanguage}.
             
@@ -140,12 +144,10 @@ export async function translateAnalaysisResult(data: any, targetLanguage: string
             const response = await result.response;
             const textResponse = response.text();
 
-            // Robust JSON extraction to handle ```json wrappers or intro text
+            // Robust JSON extraction
             let cleanText = textResponse.trim();
-            // Remove markdown code blocks (non-greedy match optional)
             cleanText = cleanText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-            // Extract JSON object from first '{' to last '}'
             const firstOpen = cleanText.indexOf('{');
             const lastClose = cleanText.lastIndexOf('}');
 
@@ -157,10 +159,24 @@ export async function translateAnalaysisResult(data: any, targetLanguage: string
 
         } catch (error) {
             console.error(`Translation attempt ${retryCount + 1} failed:`, error);
-            if (retryCount < 1) { // Retry once
+
+            // Limit retries to 3 total attempts
+            if (retryCount < 3) {
+                const errorMsg = String(error);
+                const isQuotaError = errorMsg.includes("429") || errorMsg.includes("Quota") || errorMsg.includes("503");
+
+                // Exponential Backoff: 4s, 8s, 16s
+                const waitMs = isQuotaError ? (retryCount + 1) * 4000 : 2000;
+
+                console.log(`Waiting ${waitMs}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, waitMs));
                 return runTranslation(retryCount + 1);
             }
-            throw error; // Bubble up the final error
+
+            const userFriendlyError = String(error).includes("429")
+                ? "Translation service busy. Please try again later."
+                : String(error);
+            throw new Error(userFriendlyError);
         }
     };
 

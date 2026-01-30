@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { AlertTriangle, CheckCircle, Info, Loader2, ArrowLeft, Languages, FileText } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -32,6 +32,10 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     const [language, setLanguage] = useState('en');
     const [isTranslating, setIsTranslating] = useState(false);
 
+    // Rate Limiting / Cooldown
+    const [cooldown, setCooldown] = useState(0);
+    const lastRequestTime = useRef<number>(0);
+
     useEffect(() => {
         async function fetchData() {
             try {
@@ -56,23 +60,60 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         fetchData();
     }, [id]);
 
+    // Cache for translations: { [langCode]: { data, labels } }
+    const [translationCache, setTranslationCache] = useState<Record<string, any>>({});
+
+    // Cooldown Timer Effect
+    useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setInterval(() => setCooldown(c => c - 1), 1000);
+            return () => clearInterval(timer);
+        }
+    }, [cooldown]);
+
     const handleLanguageChange = async (newLang: string) => {
         if (newLang === language) return;
+
+        // Prevent rapid clicks (Cooldown check)
+        const now = Date.now();
+        if (now - lastRequestTime.current < 2000) {
+            // Too fast, ignore or show brief toast
+            return;
+        }
+
+        // If cooldown active from previous 429
+        if (cooldown > 0) {
+            alert(`Please wait ${cooldown}s before translating again.`);
+            return;
+        }
+
         setLanguage(newLang);
 
         if (!originalData) return;
 
+        // Check cache first
+        if (translationCache[newLang]) {
+            setDisplayData(translationCache[newLang].data);
+            setLabels(translationCache[newLang].labels);
+            return;
+        }
+
+        lastRequestTime.current = Date.now();
         setIsTranslating(true);
+
         try {
             // Translate the entire object at once
             const targetLangName = INDIAN_LANGUAGES.find(l => l.code === newLang)?.name || 'English';
             const translatedResponse = await translateAnalaysisResult(originalData, targetLangName);
 
-            // The server action now returns { data: ..., labels: ... } or just data for older version? 
-            // We need to handle both if transition. But for now we updated `actions.ts` to return new structure.
             if (translatedResponse.data && translatedResponse.labels) {
+                // Update State and Cache
                 setDisplayData(translatedResponse.data);
                 setLabels(translatedResponse.labels);
+                setTranslationCache(prev => ({
+                    ...prev,
+                    [newLang]: { data: translatedResponse.data, labels: translatedResponse.labels }
+                }));
             } else {
                 // Fallback if structure mismatch
                 setDisplayData(translatedResponse);
@@ -80,11 +121,9 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
         } catch (error) {
             console.error("Translation failed", error);
-            // Fallback: stay on current data or revert to original? 
-            // Better to show error but keep current view safe.
-            // For now, let's just revert to original to avoid broken UI
+
+            // Revert to English/Original on failure
             setDisplayData(originalData);
-            // Reset labels to English
             setLabels({
                 simple_explanation: "Simple Explanation",
                 what_means: "What this means for you",
@@ -93,7 +132,17 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 analysis_result: "Analysis Result",
                 back_to_upload: "Back to Upload"
             });
-            // Ideally add a toast here
+            setLanguage('en'); // Reset dropdown to English
+
+            // Check if it's our cleaned up 429 error
+            const errString = String(error);
+            if (errString.includes("busy") || errString.includes("Rate Limit")) {
+                setCooldown(10); // Enforce 10s cooldown
+                alert("Translation service is busy. Please wait 10 seconds.");
+            } else {
+                alert("Translation failed. displaying original text.");
+            }
+
         } finally {
             setIsTranslating(false);
         }
@@ -155,7 +204,8 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                     <select
                         value={language}
                         onChange={(e) => handleLanguageChange(e.target.value)}
-                        className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer pr-8 appearance-none text-foreground min-w-[120px]"
+                        disabled={isTranslating || cooldown > 0}
+                        className={`bg-transparent text-sm font-medium focus:outline-none cursor-pointer pr-8 appearance-none text-foreground min-w-[120px] ${isTranslating || cooldown > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
                         style={{
                             backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                             backgroundPosition: `right 0.5rem center`,
@@ -170,6 +220,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         ))}
                     </select>
                     {isTranslating && <Loader2 className="h-4 w-4 animate-spin text-primary ml-2" />}
+                    {cooldown > 0 && <span className="text-xs text-orange-500 font-bold ml-1">{cooldown}s</span>}
                 </div>
             </div>
 
