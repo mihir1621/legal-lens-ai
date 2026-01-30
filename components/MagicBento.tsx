@@ -109,7 +109,7 @@ export const MagicCard: React.FC<{
         }, [particleCount, glowColor]);
 
         const clearAllParticles = useCallback(() => {
-            timeoutsRef.current.forEach(clearTimeout);
+            timeoutsRef.current.forEach(window.clearTimeout);
             timeoutsRef.current = [];
             magnetismAnimationRef.current?.kill();
 
@@ -135,7 +135,7 @@ export const MagicCard: React.FC<{
             }
 
             memoizedParticles.current.forEach((particle, index) => {
-                const timeoutId = setTimeout(() => {
+                const timeoutId = window.setTimeout(() => {
                     if (!isHoveredRef.current || !cardRef.current) return;
 
                     const clone = particle.cloneNode(true) as HTMLDivElement;

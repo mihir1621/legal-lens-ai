@@ -7,7 +7,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 export async function analyzeLegalText(text: string) {
   const runAnalysis = async (retryCount = 0): Promise<any> => {
     try {
-      // Updated to use gemini-2.5-flash-lite as checked by diagnostics
+      // Updated to use gemini-2.5-flash-lite as verified working model
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
       const prompt = `

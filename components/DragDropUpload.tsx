@@ -9,7 +9,7 @@ import { extractTextFromFile } from '@/app/actions';
 import { analyzeLegalText } from '@/app/analyze';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import KeyTester from './KeyTester';
+
 
 export default function DragDropUpload() {
     const [file, setFile] = useState<File | null>(null);
@@ -100,7 +100,7 @@ export default function DragDropUpload() {
         <div className="w-full max-w-2xl mx-auto space-y-8">
             <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-center">Upload Document</h2>
-                {process.env.NODE_ENV === 'development' && <div className="max-w-md mx-auto"><KeyTester /></div>}
+
                 <div
                     {...getRootProps()}
                     className={cn(

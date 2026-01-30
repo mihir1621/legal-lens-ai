@@ -201,8 +201,27 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         <ArrowLeft className="h-4 w-4 mr-1" />
                         {labels.back_to_upload}
                     </Link>
-                    <h1 className="text-3xl font-bold mb-2">{labels.analysis_result}</h1>
-                    <p className="text-muted-foreground text-sm uppercase tracking-wider">ID: {id}</p>
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 mb-2">
+                        <h1 className="text-3xl font-bold">{labels.analysis_result}</h1>
+                        <div className="flex-1 overflow-hidden pointer-events-none relative h-7 bg-amber-50 dark:bg-amber-900/10 rounded-full border border-amber-200 dark:border-amber-900/50 flex items-center">
+                            {/* Static Part: Icon and Warning Label */}
+                            <div className="flex items-center gap-1.5 px-3 bg-amber-50/80 dark:bg-amber-950/80 border-r border-amber-200 dark:border-amber-900/50 h-full z-10">
+                                <AlertTriangle className="h-3 w-3 text-amber-700 dark:text-amber-400" />
+                                <span className="text-[9px] font-bold uppercase text-amber-700 dark:text-amber-400">Warning</span>
+                            </div>
+
+                            {/* Moving Part: The Text */}
+                            <div
+                                className="whitespace-nowrap flex-1"
+                                style={{ animation: 'marquee-disclaimer 20s linear infinite' }}
+                            >
+                                <span className="text-[10px] md:text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                    “This tool is provided for informational purposes only and does not constitute legal advice.”
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-muted-foreground text-sm uppercase tracking-wider mb-2">ID: {id}</p>
                 </div>
 
                 {/* Custom Animated Language Shifter (Clean version - no card glow) */}

@@ -94,6 +94,28 @@
   }
 }
 
+@keyframes marquee-disclaimer {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes float-linear {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(40px);
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
