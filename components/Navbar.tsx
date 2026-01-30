@@ -1,7 +1,39 @@
+'use client';
+
 import Link from 'next/link';
-import { Scale } from 'lucide-react';
+import { Scale, LogOut, User } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+import { useEffect, useState } from 'react';
 
 export default function Navbar() {
+    const [user, setUser] = useState<any>(null);
+    const pathname = usePathname();
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((u) => {
+            setUser(u);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        await signOut(auth);
+    };
+
+    // Don't show navbar links on auth pages to keep it clean
+    if (['/login', '/signup', '/forgot-password'].includes(pathname)) {
+        return (
+            <nav className="absolute top-0 z-50 w-full p-6">
+                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
+                    <Scale className="h-6 w-6" />
+                    <span>LegalLens</span>
+                </Link>
+            </nav>
+        );
+    }
+
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -9,14 +41,37 @@ export default function Navbar() {
                     <Scale className="h-6 w-6" />
                     <span>LegalLens</span>
                 </Link>
+
                 <div className="flex items-center gap-6">
-                    <Link href="/upload" className="text-sm font-medium hover:text-primary transition-colors">Analyze</Link>
-                    <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors">History</Link>
-                    <Link href="/compare" className="text-sm font-medium hover:text-primary transition-colors">Compare</Link>
-                    {/* Auth placeholder */}
-                    <button className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-primary/25">
-                        Get Started
-                    </button>
+                    {user ? (
+                        <>
+                            <Link href="/upload" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Analyze</Link>
+                            <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">History</Link>
+                            <Link href="/compare" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Compare</Link>
+
+                            <div className="h-6 w-px bg-border hidden sm:block" />
+
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-medium hidden md:block">
+                                    {user.displayName || user.email?.split('@')[0]}
+                                </span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="rounded-full bg-secondary/10 px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/20 transition-colors flex items-center gap-2"
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </>
+                    ) : (
+                        <Link href="/login">
+                            <button className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-primary/25 flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                Login
+                            </button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </nav>

@@ -6,6 +6,10 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { extractTextFromFile } from '@/app/actions';
+import { analyzeLegalText } from '@/app/analyze';
+import { db, auth } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import KeyTester from './KeyTester';
 
 export default function DragDropUpload() {
     const [file, setFile] = useState<File | null>(null);
@@ -57,21 +61,36 @@ export default function DragDropUpload() {
                 textToAnalyze = result.text;
             }
 
-            // Here is where we would normally send 'textToAnalyze' to the AI API
-            // and create a Firestore document.
-            // For this MVP without API keys, we simulate the success.
-            console.log("Analyzing text of length:", textToAnalyze.length);
+            console.log("Extracted text, sending to AI...");
 
-            // Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // 1. Call AI Analysis
+            const analysisResult = await analyzeLegalText(textToAnalyze);
+            console.log("AI Analysis Complete", analysisResult);
 
-            // Navigate to a demo result page
-            // In a real app, this would be the ID returned from Firestore
-            router.push('/document/demo-123');
+            // 2. Save to Firestore
+            const user = auth.currentUser;
+            if (user) {
+                const docRef = await addDoc(collection(db, "documents"), {
+                    userId: user.uid,
+                    title: file ? file.name : "Text Snippet",
+                    originalText: textToAnalyze.substring(0, 1000) + "...", // Save preview
+                    analysis: analysisResult,
+                    createdAt: serverTimestamp(),
+                    riskLevel: analysisResult.red_flags.some((f: any) => f.severity === 'High') ? 'High' :
+                        analysisResult.red_flags.length > 0 ? 'Medium' : 'Low'
+                });
+
+                // 3. Navigate to result
+                router.push(`/document/${docRef.id}`);
+            } else {
+                console.warn("User not logged in, saving to local storage instead of Firestore for demo");
+                localStorage.setItem("temp_analysis", JSON.stringify(analysisResult));
+                router.push('/document/temp');
+            }
 
         } catch (err) {
             console.error(err);
-            alert("An unexpected error occurred during analysis.");
+            alert("Analysis Failed: " + (err instanceof Error ? err.message : "Unknown error"));
         } finally {
             setIsUploading(false);
         }
@@ -81,6 +100,7 @@ export default function DragDropUpload() {
         <div className="w-full max-w-2xl mx-auto space-y-8">
             <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-center">Upload Document</h2>
+                {process.env.NODE_ENV === 'development' && <div className="max-w-md mx-auto"><KeyTester /></div>}
                 <div
                     {...getRootProps()}
                     className={cn(
