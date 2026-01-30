@@ -7,6 +7,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 // import { translateText } from '@/app/actions'; // Replaced by full translation
 import { translateAnalaysisResult } from '@/app/actions';
+import { DocumentSkeleton } from '@/components/DocumentSkeleton';
+import MagicBento, { MagicCard } from '@/components/MagicBento';
 
 export default function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
@@ -31,6 +33,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     // Language State
     const [language, setLanguage] = useState('en');
     const [isTranslating, setIsTranslating] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // Rate Limiting / Cooldown
     const [cooldown, setCooldown] = useState(0);
@@ -76,8 +79,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
         // Prevent rapid clicks (Cooldown check)
         const now = Date.now();
-        if (now - lastRequestTime.current < 2000) {
-            // Too fast, ignore or show brief toast
+        if (now - lastRequestTime.current < 500) { // Reduced debounce for smoother feel
             return;
         }
 
@@ -91,18 +93,23 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
         if (!originalData) return;
 
-        // Check cache first
+        // Start Animation IMMEDIATELY for all switches
+        setIsTranslating(true);
+        lastRequestTime.current = Date.now();
+
+        // CHECK CACHE
         if (translationCache[newLang]) {
+            // Artificial delay (600ms) to let the beautiful animation play and give feedback
+            await new Promise(r => setTimeout(r, 800));
+
             setDisplayData(translationCache[newLang].data);
             setLabels(translationCache[newLang].labels);
+            setIsTranslating(false);
             return;
         }
 
-        lastRequestTime.current = Date.now();
-        setIsTranslating(true);
-
+        // FETCH NEW
         try {
-            // Translate the entire object at once
             const targetLangName = INDIAN_LANGUAGES.find(l => l.code === newLang)?.name || 'English';
             const translatedResponse = await translateAnalaysisResult(originalData, targetLangName);
 
@@ -132,12 +139,12 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 analysis_result: "Analysis Result",
                 back_to_upload: "Back to Upload"
             });
-            setLanguage('en'); // Reset dropdown to English
+            setLanguage('en');
 
             // Check if it's our cleaned up 429 error
             const errString = String(error);
             if (errString.includes("busy") || errString.includes("Rate Limit")) {
-                setCooldown(10); // Enforce 10s cooldown
+                setCooldown(10);
                 alert("Translation service is busy. Please wait 10 seconds.");
             } else {
                 alert("Translation failed. displaying original text.");
@@ -198,130 +205,156 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                     <p className="text-muted-foreground text-sm uppercase tracking-wider">ID: {id}</p>
                 </div>
 
-                {/* Global Language Switcher - Upper Right Corner */}
-                <div className="flex items-center gap-2 bg-secondary/20 p-2 rounded-lg border border-border/50">
-                    <Languages className="h-5 w-5 text-muted-foreground" />
-                    <select
-                        value={language}
-                        onChange={(e) => handleLanguageChange(e.target.value)}
+                {/* Custom Animated Language Shifter (Clean version - no card glow) */}
+                <div className="relative">
+                    <button
+                        onClick={() => !isTranslating && cooldown === 0 && setIsDropdownOpen(!isDropdownOpen)}
                         disabled={isTranslating || cooldown > 0}
-                        className={`bg-transparent text-sm font-medium focus:outline-none cursor-pointer pr-8 appearance-none text-foreground min-w-[120px] ${isTranslating || cooldown > 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                        style={{
-                            backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                            backgroundPosition: `right 0.5rem center`,
-                            backgroundRepeat: `no-repeat`,
-                            backgroundSize: `1.5em 1.5em`
-                        }}
+                        className={`flex items-center gap-2 bg-secondary/20 p-2 rounded-lg border border-border/50 transition-colors duration-200 hover:bg-secondary/30 ${isTranslating || cooldown > 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                     >
-                        {INDIAN_LANGUAGES.map(lang => (
-                            <option key={lang.code} value={lang.code} className="bg-white text-black dark:bg-gray-900 dark:text-white">
-                                {lang.name}
-                            </option>
-                        ))}
-                    </select>
-                    {isTranslating && <Loader2 className="h-4 w-4 animate-spin text-primary ml-2" />}
-                    {cooldown > 0 && <span className="text-xs text-orange-500 font-bold ml-1">{cooldown}s</span>}
+                        <Languages className={`h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors ${isTranslating ? 'animate-bounce text-primary' : ''}`} />
+                        <span className="text-sm font-medium text-foreground min-w-[100px] text-left">
+                            {INDIAN_LANGUAGES.find(l => l.code === language)?.name}
+                        </span>
+                        <svg
+                            className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                            fill="none" viewBox="0 0 20 20" stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 8l4 4 4-4" />
+                        </svg>
+
+                        {isTranslating && <Loader2 className="h-4 w-4 animate-spin text-primary ml-1" />}
+                        {cooldown > 0 && <span className="text-xs text-orange-500 font-bold ml-1 animate-pulse">{cooldown}s</span>}
+                    </button>
+
+                    {/* Animated Dropdown Menu */}
+                    <div
+                        className={`absolute right-0 mt-2 w-full rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden transition-all duration-300 origin-top ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}
+                    >
+                        <div className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            {INDIAN_LANGUAGES.map(lang => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        handleLanguageChange(lang.code);
+                                        setIsDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-all duration-200 hover:bg-primary/10 hover:scale-[1.02] hover:pl-6 ${language === lang.code ? 'text-primary font-bold bg-primary/5' : 'text-foreground'}`}
+                                >
+                                    {lang.name}
+                                    {language === lang.code && <CheckCircle className="h-4 w-4 text-primary" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Background Overlay to close dropdown */}
+                {isDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />}
             </div>
 
             {/* Content Grid */}
-            <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 transition-opacity duration-300 ${isTranslating ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                {/* Simple Summary */}
-                <div className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
-                    <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <Info className="text-primary h-5 w-5" />
-                            {labels.simple_explanation}
+            {isTranslating ? (
+                <DocumentSkeleton />
+            ) : (
+                <MagicBento className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Simple Summary */}
+                    <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
+                        <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
+                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                                <Info className="text-primary h-5 w-5" />
+                                {labels.simple_explanation}
+                            </h2>
+                        </div>
+
+                        <div className="text-lg leading-relaxed text-card-foreground/90 min-h-[100px]">
+                            {displayData.summary_simple}
+                        </div>
+                    </MagicCard>
+
+                    {/* Actionable Points - SWAPPED to Position 2 (formerly Red Flags) */}
+                    <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/10 p-6 shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle className="h-5 w-5" />
+                            {labels.what_means}
                         </h2>
-                    </div>
+                        <ul className="space-y-3">
+                            {displayData.what_it_means && displayData.what_it_means.map((point: string, i: number) => (
+                                <li key={i} className="flex gap-3 text-sm">
+                                    <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                                    <span className="text-emerald-900 dark:text-emerald-100 font-medium leading-relaxed">{point}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </MagicCard>
 
-                    <div className="text-lg leading-relaxed text-card-foreground/90 min-h-[100px]">
-                        {displayData.summary_simple}
-                    </div>
-                </div>
-
-                {/* Actionable Points - SWAPPED to Position 2 (formerly Red Flags) */}
-                <div className="col-span-full lg:col-span-1 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/10 p-6 shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                        <CheckCircle className="h-5 w-5" />
-                        {labels.what_means}
-                    </h2>
-                    <ul className="space-y-3">
-                        {displayData.what_it_means && displayData.what_it_means.map((point: string, i: number) => (
-                            <li key={i} className="flex gap-3 text-sm">
-                                <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                <span className="text-emerald-900 dark:text-emerald-100 font-medium leading-relaxed">{point}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-
-                {/* Key Clauses - Remains Position 3 */}
-                <div className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                        <FileText className="text-primary h-5 w-5" />
-                        {labels.key_clauses}
-                    </h2>
-                    <div className="space-y-4">
-                        {displayData.key_clauses && displayData.key_clauses.map((clause: any, i: number) => (
-                            <div key={i} className="border-b last:border-0 border-border/50 pb-4 last:pb-0">
-                                <div className="flex justify-between mb-1 items-center">
-                                    <h3 className="font-medium text-card-foreground">{clause.title}</h3>
-                                    <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ml-2 ${(clause.risk || 'low').toLowerCase() === 'high' ? 'bg-destructive/10 text-destructive' :
-                                        (clause.risk || 'low').toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-600' :
-                                            'bg-green-500/10 text-green-600'
-                                        }`}>
-                                        {clause.risk || 'Low'} Risk
-                                    </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">{clause.explanation}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Red Flags - SWAPPED to Position 4 (formerly Actionable Points) */}
-                <div className="col-span-full lg:col-span-1 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 p-6 shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-red-700 dark:text-red-400">
-                        <AlertTriangle className="h-5 w-5" />
-                        {labels.red_flags}
-                    </h2>
-                    <div className="space-y-4">
-                        {displayData.red_flags && displayData.red_flags.length > 0 ? (
-                            displayData.red_flags.map((flag: any, i: number) => (
-                                <div key={i} className="p-3 bg-white dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="font-semibold text-red-900 dark:text-red-200 text-sm">
-                                            {/* Show 'reason' (Explanation) as main title if in English to avoid Marathi quotes */}
-                                            {language === 'en' ? flag.reason : (flag.text || flag.reason)}
-                                        </span>
-                                        <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 ml-2 flex-shrink-0">
-                                            {flag.severity}
+                    {/* Key Clauses - Remains Position 3 */}
+                    <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                            <FileText className="text-primary h-5 w-5" />
+                            {labels.key_clauses}
+                        </h2>
+                        <div className="space-y-4">
+                            {displayData.key_clauses && displayData.key_clauses.map((clause: any, i: number) => (
+                                <div key={i} className="border-b last:border-0 border-border/50 pb-4 last:pb-0">
+                                    <div className="flex justify-between mb-1 items-center">
+                                        <h3 className="font-medium text-card-foreground">{clause.title}</h3>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ml-2 ${(clause.risk || 'low').toLowerCase() === 'high' ? 'bg-destructive/10 text-destructive' :
+                                            (clause.risk || 'low').toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-600' :
+                                                'bg-green-500/10 text-green-600'
+                                            }`}>
+                                            {clause.risk || 'Low'} Risk
                                         </span>
                                     </div>
-
-                                    {/* Show 'text' (Quote) as secondary detail ONLY if not in English (or if we want to show original quote) */}
-                                    {language !== 'en' && (
-                                        <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-1 italic">
-                                            "{flag.reason}"
-                                        </p>
-                                    )}
-
-                                    {/* If entirely in English usage, we might want to hide the raw quote 'flag.text' if it's just a duplicate or foreign text. 
-                                         User asked to "remove it" if it's Marathi. 
-                                         So we swap: Main = Reason. Secondary = Text (only if not English mode where translation aligns).
-                                     */}
-                                    {language === 'en' && (
-                                        <div className="hidden"></div> // completely hide the marathi quote
-                                    )}
+                                    <p className="text-sm text-muted-foreground">{clause.explanation}</p>
                                 </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-red-600/60 italic">No major red flags detected.</p>
-                        )}
-                    </div>
-                </div>
-            </div>
+                            ))}
+                        </div>
+                    </MagicCard>
+
+                    {/* Red Flags - SWAPPED to Position 4 (formerly Actionable Points) */}
+                    <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 p-6 shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-red-700 dark:text-red-400">
+                            <AlertTriangle className="h-5 w-5" />
+                            {labels.red_flags}
+                        </h2>
+                        <div className="space-y-4">
+                            {displayData.red_flags && displayData.red_flags.length > 0 ? (
+                                displayData.red_flags.map((flag: any, i: number) => (
+                                    <div key={i} className="p-3 bg-white dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <span className="font-semibold text-red-900 dark:text-red-200 text-sm">
+                                                {/* Show 'reason' (Explanation) as main title if in English to avoid Marathi quotes */}
+                                                {language === 'en' ? flag.reason : (flag.text || flag.reason)}
+                                            </span>
+                                            <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 ml-2 flex-shrink-0">
+                                                {flag.severity}
+                                            </span>
+                                        </div>
+
+                                        {/* Show 'text' (Quote) as secondary detail ONLY if not in English (or if we want to show original quote) */}
+                                        {language !== 'en' && (
+                                            <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-1 italic">
+                                                "{flag.reason}"
+                                            </p>
+                                        )}
+
+                                        {/* If entirely in English usage, we might want to hide the raw quote 'flag.text' if it's just a duplicate or foreign text. 
+                                            User asked to "remove it" if it's Marathi. 
+                                            So we swap: Main = Reason. Secondary = Text (only if not English mode where translation aligns).
+                                        */}
+                                        {language === 'en' && (
+                                            <div className="hidden"></div> // completely hide the marathi quote
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-red-600/60 italic">No major red flags detected.</p>
+                            )}
+                        </div>
+                    </MagicCard>
+                </MagicBento>
+            )}
         </div>
     );
 }
