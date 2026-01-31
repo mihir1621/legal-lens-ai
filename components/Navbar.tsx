@@ -5,6 +5,7 @@ import { Scale, LogOut, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useEffect, useState } from 'react';
 
 export default function Navbar() {
@@ -22,14 +23,17 @@ export default function Navbar() {
         await signOut(auth);
     };
 
-    // Don't show navbar links on auth pages to keep it clean
+    // Auth pages (Login/Signup): Clean navbar + Theme Toggle
     if (['/login', '/signup', '/forgot-password'].includes(pathname)) {
         return (
-            <nav className="absolute top-0 z-50 w-full p-6">
-                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-                    <Scale className="h-6 w-6" />
+            <nav className="absolute top-0 z-50 w-full p-6 flex items-center justify-between">
+                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+                    <Scale className="h-6 w-6 text-primary" />
                     <span>LegalLens</span>
                 </Link>
+                <div className="z-50">
+                    <ThemeToggle />
+                </div>
             </nav>
         );
     }
@@ -37,12 +41,12 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-primary">
-                    <Scale className="h-6 w-6" />
+                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:opacity-80 transition-opacity">
+                    <Scale className="h-6 w-6 text-primary" />
                     <span>LegalLens</span>
                 </Link>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6">
                     {user ? (
                         <>
                             <Link href="/upload" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Analyze</Link>
@@ -72,6 +76,9 @@ export default function Navbar() {
                             </button>
                         </Link>
                     )}
+
+                    {/* Theme Toggle - Always Last */}
+                    <ThemeToggle />
                 </div>
             </div>
         </nav>

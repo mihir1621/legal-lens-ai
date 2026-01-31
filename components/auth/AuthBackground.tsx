@@ -58,17 +58,17 @@ function FloatingElements() {
 
 export default function AuthBackground({ children }: { children: React.ReactNode }) {
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-slate-900">
+        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-background transition-colors duration-300">
             {/* Animated Gradient Background */}
             <motion.div
                 className="absolute inset-0 z-0 opacity-40"
                 animate={{
                     background: [
-                        "radial-gradient(circle at 0% 0%, #4f46e5 0%, transparent 50%)",
-                        "radial-gradient(circle at 100% 0%, #0ea5e9 0%, transparent 50%)",
-                        "radial-gradient(circle at 100% 100%, #6366f1 0%, transparent 50%)",
-                        "radial-gradient(circle at 0% 100%, #8b5cf6 0%, transparent 50%)",
-                        "radial-gradient(circle at 0% 0%, #4f46e5 0%, transparent 50%)",
+                        "radial-gradient(circle at 0% 0%, #8b5cf6 0%, transparent 50%)", // Violet 500
+                        "radial-gradient(circle at 100% 0%, #d946ef 0%, transparent 50%)", // Fuchsia 500
+                        "radial-gradient(circle at 100% 100%, #06b6d4 0%, transparent 50%)", // Cyan 500
+                        "radial-gradient(circle at 0% 100%, #a855f7 0%, transparent 50%)", // Purple 500
+                        "radial-gradient(circle at 0% 0%, #8b5cf6 0%, transparent 50%)",
                     ]
                 }}
                 transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
