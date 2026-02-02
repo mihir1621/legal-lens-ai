@@ -19,8 +19,16 @@ export default function Navbar() {
         return () => unsubscribe();
     }, []);
 
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
     const handleLogout = async () => {
-        await signOut(auth);
+        setIsLoggingOut(true);
+        // Wait for animation to finish before signing out
+        setTimeout(async () => {
+            sessionStorage.removeItem("welcome_shown"); // Reset welcome message for next login
+            await signOut(auth);
+            setIsLoggingOut(false);
+        }, 600);
     };
 
     // Auth pages (Login/Signup): Clean navbar + Theme Toggle
@@ -49,6 +57,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-4 sm:gap-6">
                     {user ? (
                         <>
+                            <Link href="/" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Home</Link>
                             <Link href="/upload" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Analyze</Link>
                             <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">History</Link>
                             <Link href="/compare" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Compare</Link>
@@ -61,10 +70,18 @@ export default function Navbar() {
                                 </span>
                                 <button
                                     onClick={handleLogout}
-                                    className="rounded-full bg-secondary/10 px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/20 transition-colors flex items-center gap-2"
+                                    disabled={isLoggingOut}
+                                    className={`
+                                        group relative rounded-full border border-red-500/20 px-4 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 
+                                        bg-gradient-to-r from-red-500/10 via-transparent to-red-500/5
+                                        transition-all duration-500 ease-out
+                                        hover:shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:-translate-y-0.5 hover:border-red-500/40
+                                        active:scale-95 flex items-center gap-1.5 overflow-hidden
+                                        ${isLoggingOut ? 'opacity-0 scale-x-50 blur-sm delay-300 pointer-events-none' : 'opacity-100 scale-100'}
+                                    `}
                                 >
-                                    <LogOut className="h-4 w-4" />
-                                    <span>Logout</span>
+                                    <LogOut className={`h-3.5 w-3.5 transition-all duration-500 ease-out ${isLoggingOut ? 'translate-x-8 opacity-0' : 'group-hover:translate-x-1'}`} />
+                                    <span className={`transition-all duration-500 ease-out delay-75 ${isLoggingOut ? 'translate-x-12 opacity-0' : 'group-hover:translate-x-1'}`}>Logout</span>
                                 </button>
                             </div>
                         </>

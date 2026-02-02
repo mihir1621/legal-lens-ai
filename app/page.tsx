@@ -1,9 +1,77 @@
+'use client';
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, FileText, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { auth } from "@/lib/firebase";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
+  const [showGreeting, setShowGreeting] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Check if we've already shown the welcome message in this session
+        const hasShown = sessionStorage.getItem("welcome_shown");
+        if (!hasShown) {
+          setUserName(user.displayName || user.email?.split('@')[0] || "User");
+          setShowGreeting(true);
+          sessionStorage.setItem("welcome_shown", "true");
+
+          // Keep visible for 3.5 seconds
+          const timer = setTimeout(() => {
+            setShowGreeting(false);
+          }, 3500);
+          return () => clearTimeout(timer);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center relative">
+      {/* --- Welcome Overlay --- */}
+      <AnimatePresence>
+        {showGreeting && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-background"
+          >
+            {/* Skeleton Background (Behind Greeting) */}
+            <div className="absolute inset-0 flex flex-col items-center pt-32 px-4 space-y-8 opacity-20 pointer-events-none">
+              {/* Hero Skeleton */}
+              <div className="h-8 w-64 bg-primary/20 rounded-full animate-pulse" />
+              <div className="h-16 w-3/4 max-w-2xl bg-foreground/10 rounded-xl animate-pulse" />
+              <div className="h-16 w-1/2 max-w-xl bg-foreground/10 rounded-xl animate-pulse" />
+              <div className="h-4 w-96 max-w-lg bg-muted-foreground/20 rounded-lg animate-pulse mt-4" />
+              <div className="flex gap-4 mt-8">
+                <div className="h-12 w-40 bg-primary/20 rounded-full animate-pulse" />
+                <div className="h-12 w-40 bg-foreground/5 rounded-full animate-pulse" />
+              </div>
+            </div>
+
+            {/* Greeting Text */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.1, opacity: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="z-10 text-center"
+            >
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+                Welcome to LegalLens, <br />
+                <span className="text-primary">{userName}</span>
+              </h1>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero Section */}
       <section className="relative w-full overflow-hidden px-4 pt-20 pb-32 text-center md:pt-32">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />

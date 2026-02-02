@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Upload, FileText, Loader2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { extractTextFromFile } from '@/app/actions';
@@ -67,6 +68,12 @@ export default function DragDropUpload() {
             const analysisResult = await analyzeLegalText(textToAnalyze);
             console.log("AI Analysis Complete", analysisResult);
 
+            if (analysisResult.error) {
+                alert(`Analysis Failed: ${analysisResult.error}`);
+                setIsUploading(false);
+                return;
+            }
+
             // 2. Save to Firestore
             const user = auth.currentUser;
             if (user) {
@@ -101,39 +108,86 @@ export default function DragDropUpload() {
             <div className="space-y-4">
                 <h2 className="text-2xl font-bold text-center">Upload Document</h2>
 
-                <div
-                    {...getRootProps()}
+                <motion.div
+                    {...(getRootProps() as any)}
+                    whileHover={{ scale: 1.01, borderColor: "var(--primary)" }}
+                    whileTap={{ scale: 0.98 }}
+                    animate={{
+                        backgroundColor: isDragActive ? "rgba(139, 92, 246, 0.1)" : "rgba(255, 255, 255, 0)",
+                        borderColor: isDragActive ? "var(--primary)" : file ? "var(--primary)" : "var(--border)",
+                    }}
+                    transition={{ duration: 0.3 }}
                     className={cn(
-                        "border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-colors relative overflow-hidden",
-                        isDragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/50",
-                        file ? "bg-primary/5 border-primary" : ""
+                        "relative border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center cursor-pointer overflow-hidden min-h-[300px]",
+                        isDragActive && "ring-4 ring-primary/20"
                     )}
                 >
                     <input {...getInputProps()} />
-                    {file ? (
-                        <div className="flex flex-col items-center z-10">
-                            <FileText className="h-12 w-12 text-primary mb-4" />
-                            <p className="font-medium text-lg">{file.name}</p>
-                            <p className="text-sm text-muted-foreground">{(file.size / 1024).toFixed(2)} KB</p>
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                                className="mt-4 p-2 rounded-full hover:bg-destructive/10 text-destructive text-sm font-medium transition-colors"
+
+                    {/* Animated Background Gradient (Subtle) */}
+                    <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br from-violet-500/20 via-transparent to-fuchsia-500/20 pointer-events-none" />
+
+                    <AnimatePresence mode="wait">
+                        {file ? (
+                            <motion.div
+                                key="file-selected"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="flex flex-col items-center z-10"
                             >
-                                Remove File
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center z-10">
-                            <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-lg font-medium text-foreground">Drag & drop your document here</p>
-                            <p className="text-sm text-muted-foreground mt-2">Supports PDF, DOCX, TXT</p>
-                            <button type="button" className="mt-6 rounded-full bg-secondary text-secondary-foreground px-6 py-2 text-sm font-medium hover:bg-secondary/90 transition-colors">
-                                Browse Files
-                            </button>
-                        </div>
-                    )}
-                </div>
+                                <div className="relative mb-4">
+                                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                                    <FileText className="relative h-16 w-16 text-primary drop-shadow-md" />
+                                </div>
+                                <p className="font-bold text-xl text-foreground">{file.name}</p>
+                                <p className="text-sm text-muted-foreground mb-4">{(file.size / 1024).toFixed(2)} KB</p>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                    className="px-4 py-2 rounded-full bg-destructive/10 text-destructive text-sm font-bold border border-destructive/20 hover:bg-destructive/20 transition-colors"
+                                >
+                                    Remove File
+                                </motion.button>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="upload-prompt"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="flex flex-col items-center z-10"
+                            >
+                                <motion.div
+                                    animate={{ y: [0, -10, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="mb-6 relative"
+                                >
+                                    <div className={`absolute inset-0 blur-2xl rounded-full transition-colors duration-500 ${isDragActive ? 'bg-primary/40' : 'bg-secondary/20'}`} />
+                                    <Upload className={`relative h-16 w-16 transition-colors duration-300 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                                </motion.div>
+
+                                <h3 className="text-xl font-bold text-foreground mb-2">
+                                    {isDragActive ? "Drop text magic here!" : "Drag & drop your document"}
+                                </h3>
+                                <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+                                    Supports PDF, DOCX, TXT. We'll analyze the fine print for you.
+                                </p>
+
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    type="button"
+                                    className="rounded-full bg-primary text-primary-foreground px-8 py-3 text-sm font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 hover:shadow-primary/40 transition-all"
+                                >
+                                    Browse Files
+                                </motion.button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
             </div>
 
             <div className="relative">

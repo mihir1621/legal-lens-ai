@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
 // import { translateText } from '@/app/actions'; // Replaced by full translation
-import { translateAnalaysisResult } from '@/app/actions';
+import { translateAnalysisResult } from "@/app/translation-service";
 import { DocumentSkeleton } from '@/components/DocumentSkeleton';
 import MagicBento, { MagicCard } from '@/components/MagicBento';
 
@@ -19,16 +19,19 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
     // UI Labels State
     const [labels, setLabels] = useState({
-        simple_explanation: "Simple Explanation",
+        legal_summary: "Legal Text Summarization",
         what_means: "What this means for you",
         key_clauses: "Key Clauses Breakdown",
         red_flags: "Red Flags",
         analysis_result: "Analysis Result",
-        back_to_upload: "Back to Upload"
+        back_to_upload: "Back to Upload",
+        legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
     });
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+
 
     // Language State
     const [language, setLanguage] = useState('en');
@@ -75,6 +78,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     }, [cooldown]);
 
     const handleLanguageChange = async (newLang: string) => {
+        /*
         if (newLang === language) return;
 
         // Prevent rapid clicks (Cooldown check)
@@ -97,6 +101,23 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         setIsTranslating(true);
         lastRequestTime.current = Date.now();
 
+        // If switching back to English, just use the original data
+        if (newLang === 'en') {
+            await new Promise(r => setTimeout(r, 600)); // Smooth transition
+            setDisplayData(originalData);
+            setLabels({
+                legal_summary: "Legal Text Summarization",
+                what_means: "What this means for you",
+                key_clauses: "Key Clauses Breakdown",
+                red_flags: "Red Flags",
+                analysis_result: "Analysis Result",
+                back_to_upload: "Back to Upload",
+                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
+            });
+            setIsTranslating(false);
+            return;
+        }
+
         // CHECK CACHE
         if (translationCache[newLang]) {
             // Artificial delay (600ms) to let the beautiful animation play and give feedback
@@ -111,19 +132,19 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         // FETCH NEW
         try {
             const targetLangName = INDIAN_LANGUAGES.find(l => l.code === newLang)?.name || 'English';
-            const translatedResponse = await translateAnalaysisResult(originalData, targetLangName);
+            const translated = await translateAnalysisResult(originalData, targetLangName);
 
-            if (translatedResponse.data && translatedResponse.labels) {
+            if (translated.data && translated.labels) {
                 // Update State and Cache
-                setDisplayData(translatedResponse.data);
-                setLabels(translatedResponse.labels);
+                setDisplayData(translated.data);
+                setLabels(translated.labels);
                 setTranslationCache(prev => ({
                     ...prev,
-                    [newLang]: { data: translatedResponse.data, labels: translatedResponse.labels }
+                    [newLang]: { data: translated.data, labels: translated.labels }
                 }));
             } else {
                 // Fallback if structure mismatch
-                setDisplayData(translatedResponse);
+                setDisplayData(translated.data || originalData);
             }
 
         } catch (error) {
@@ -132,12 +153,13 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
             // Revert to English/Original on failure
             setDisplayData(originalData);
             setLabels({
-                simple_explanation: "Simple Explanation",
+                legal_summary: "Legal Text Summarization",
                 what_means: "What this means for you",
                 key_clauses: "Key Clauses Breakdown",
                 red_flags: "Red Flags",
                 analysis_result: "Analysis Result",
-                back_to_upload: "Back to Upload"
+                back_to_upload: "Back to Upload",
+                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
             });
             setLanguage('en');
 
@@ -153,6 +175,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         } finally {
             setIsTranslating(false);
         }
+        */
     };
 
     if (loading) {
@@ -216,7 +239,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                                 style={{ animation: 'marquee-disclaimer 20s linear infinite' }}
                             >
                                 <span className="text-[10px] md:text-xs font-semibold text-amber-700 dark:text-amber-400">
-                                    “This tool is provided for informational purposes only and does not constitute legal advice.”
+                                    “{labels.legal_disclaimer}”
                                 </span>
                             </div>
                         </div>
@@ -225,6 +248,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 </div>
 
                 {/* Custom Animated Language Shifter (Clean version - no card glow) */}
+                {/* 
                 <div className="relative">
                     <button
                         onClick={() => !isTranslating && cooldown === 0 && setIsDropdownOpen(!isDropdownOpen)}
@@ -246,7 +270,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         {cooldown > 0 && <span className="text-xs text-orange-500 font-bold ml-1 animate-pulse">{cooldown}s</span>}
                     </button>
 
-                    {/* Animated Dropdown Menu */}
+                    
                     <div
                         className={`absolute right-0 mt-2 w-full rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden transition-all duration-300 origin-top ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}
                     >
@@ -267,9 +291,10 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         </div>
                     </div>
                 </div>
+                 */}
 
                 {/* Background Overlay to close dropdown */}
-                {isDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />}
+                {/* {isDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />} */}
             </div>
 
             {/* Content Grid */}
@@ -282,7 +307,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
                             <h2 className="text-xl font-semibold flex items-center gap-2">
                                 <Info className="text-primary h-5 w-5" />
-                                {labels.simple_explanation}
+                                {labels.legal_summary}
                             </h2>
                         </div>
 

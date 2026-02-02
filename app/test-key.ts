@@ -1,22 +1,47 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+const models = [
+    "meta-llama/llama-3.2-3b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "microsoft/phi-3-mini-128k-instruct:free",
+    "google/gemini-2.0-flash-lite-preview-02-05:free" // Adding back as fallback for testing ONLY
+];
 
-export async function testGeminiKey() {
-    try {
-        const key = process.env.GOOGLE_API_KEY;
-        if (!key) return { success: false, message: "No key found in environment" };
+export async function checkModelsEnv() {
+    const apiKey = process.env.NEXT_PUBLIC_APIKEY?.replace(/["']/g, "").trim();
+    if (!apiKey) return { success: false, message: "No API KEY" };
 
-        const genAI = new GoogleGenerativeAI(key);
-        // Use gemini-2.5-flash-lite for testing
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const results = [];
 
-        const result = await model.generateContent("Hello, are you working?");
-        const response = await result.response;
-        const text = response.text();
+    for (const model of models) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s check
 
-        return { success: true, message: "Response received: " + text.substring(0, 50) + "..." };
-    } catch (error) {
-        return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "http://localhost:3000",
+                    "X-Title": "LegalLens AI",
+                },
+                signal: controller.signal,
+                body: JSON.stringify({
+                    "model": model,
+                    "messages": [{ "role": "user", "content": "Hi" }]
+                })
+            });
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+                results.push({ model, status: "OK" });
+            } else {
+                results.push({ model, status: response.status, body: await response.text() });
+            }
+        } catch (e) {
+            results.push({ model, status: "ERROR", message: String(e) });
+        }
     }
+    return results;
 }
