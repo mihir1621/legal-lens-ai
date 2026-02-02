@@ -4,6 +4,7 @@ import { ArrowRight, ShieldCheck, FileText, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
+import MagnifyingHeroHeading from "@/components/hero/MagnifyingHeroHeading";
 
 export default function Home() {
   const [showGreeting, setShowGreeting] = useState(false);
@@ -82,12 +83,7 @@ export default function Home() {
             AI-Powered Legal Simplification
           </div>
 
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
-            Understand Legal Documents <br className="hidden sm:block" />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              In Seconds, Not Hours
-            </span>
-          </h1>
+          <MagnifyingHeroHeading />
 
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
             Upload rental agreements, contracts, or policies. Get clear summaries, risk detection, and actionable advice instantly.

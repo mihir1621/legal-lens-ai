@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer utilities {
+    .perspective-1000 {
+        perspective: 1000px;
+    }
+}
+
 :root {
     /* Light Mode - Vibrant & Clean */
     --background: #ffffff;
@@ -43,44 +49,40 @@
 }
 
 .dark {
-    /* Dark Mode - Professional 'Midnight Charcoal' Palette */
-    --background: #18181b;
-    /* Zinc 950 - A warm, deep charcoal instead of plain black/navy */
-    --foreground: #f4f4f5;
-    /* Zinc 100 - Soft white for readability */
+    /* Dark Mode - Strict Monochrome (Black & Gray) */
+    --background: #000000;
+    /* Pure Black */
+    --foreground: #ededed;
+    /* Light Gray */
 
-    --card: #27272a;
-    /* Zinc 800 - distinct from background but cohesive */
-    --card-foreground: #f4f4f5;
+    --card: #121212;
+    /* Dark Gray */
+    --card-foreground: #ededed;
 
-    --popover: #27272a;
-    --popover-foreground: #f4f4f5;
+    --popover: #000000;
+    --popover-foreground: #ededed;
 
-    --primary: #8b5cf6;
-    /* Violet 500 - elegant, creative, professional */
+    --primary: #3f3f46;
+    /* Dark Gray for buttons - softer on eyes */
     --primary-foreground: #ffffff;
 
-    --secondary: #d946ef;
-    /* Fuchsia 500 - vibrant accent that pairs effectively */
-    --secondary-foreground: #ffffff;
+    --secondary: #262626;
+    /* Medium Gray */
+    --secondary-foreground: #ededed;
 
-    --muted: #3f3f46;
-    /* Zinc 700 */
-    --muted-foreground: #a1a1aa;
-    /* Zinc 400 */
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
 
-    --accent: #06b6d4;
-    /* Cyan 500 - crisp, electric details */
-    --accent-foreground: #ffffff;
+    --accent: #262626;
+    --accent-foreground: #ededed;
 
-    --destructive: #f43f5e;
-    /* Rose 500 */
-    --destructive-foreground: #ffffff;
+    --destructive: #7f1d1d;
+    /* Kept a dark red for critical errors, but desaturated */
+    --destructive-foreground: #ededed;
 
-    --border: #3f3f46;
-    /* Zinc 700 */
-    --input: #3f3f46;
-    --ring: #8b5cf6;
+    --border: #262626;
+    --input: #262626;
+    --ring: #525252;
 }
 
 @theme inline {
