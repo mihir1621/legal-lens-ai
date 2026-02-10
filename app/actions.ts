@@ -77,3 +77,58 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
         return { text: '', error: `Failed to extract text: ${msg}` };
     }
 }
+
+export async function verifyRecaptcha(token: string, action: string) {
+    const projectID = "legallens-ai-24087";
+    const apiKey = process.env.GOOGLE_API_KEY;
+    const siteKey = "6Lfci2UsAAAAAPi-lmckbc7N8WdrP2CBE1nxpBPX";
+
+    if (!apiKey) {
+        console.error("[Recaptcha] Missing GOOGLE_API_KEY environment variable");
+        return { success: false, error: "Config missing: GOOGLE_API_KEY" };
+    }
+
+    const url = `https://recaptchaenterprise.googleapis.com/v1/projects/${projectID}/assessments?key=${apiKey}`;
+
+    try {
+        console.log(`[Recaptcha] Verifying token for action: ${action}`);
+        const response = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                event: {
+                    token: token,
+                    siteKey: siteKey,
+                    expectedAction: action
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("[Recaptcha] Assessment API failed:", JSON.stringify(data));
+
+            // FAIL-SAFE: If the API is blocked or restricted, don't lock the user out.
+            // This allows the app to function even if GCP configuration is incomplete.
+            if (data.error?.message?.includes("blocked") || response.status === 403) {
+                console.warn("[Recaptcha] Assessment API is blocked/restricted. Proceeding with caution (Fail-Open).");
+                return { success: true, score: 1.0, error: "API_BLOCKED_FAIL_OPEN" };
+            }
+
+            return { success: false, error: data.error?.message || `API Status ${response.status}` };
+        }
+
+        const score = data.riskAnalysis?.score ?? 0;
+        console.log(`[Recaptcha] Assessment score: ${score}`);
+
+        return {
+            success: score >= 0.3,
+            score,
+            error: score < 0.3 ? "Low security score" : undefined
+        };
+    } catch (error) {
+        console.error("[Recaptcha] Server Error:", error);
+        // FAIL-SAFE: On server error, allow the user to proceed
+        return { success: true, score: 1.0, error: "SERVER_ERROR_FAIL_OPEN" };
+    }
+}

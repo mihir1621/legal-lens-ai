@@ -28,6 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script src="https://www.google.com/recaptcha/enterprise.js?render=6Lfci2UsAAAAAPi-lmckbc7N8WdrP2CBE1nxpBPX" async defer></script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
