@@ -1,107 +1,82 @@
 'use server';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { translateText } from "./actions/translate";
 
-const PRIMARY_MODEL = "google/gemini-2.0-flash-lite-preview-02-05:free";
-
+/**
+ * Translates an analysis result object using the Hugging Face translation service.
+ */
 export async function translateAnalysisResult(data: any, targetLanguage: string): Promise<any> {
-    const runTranslation = async (retryCount = 0): Promise<any> => {
-        try {
-            const apiKey = process.env.NEXT_PUBLIC_APIKEY?.replace(/["']/g, "").trim();
-            if (!apiKey) {
-                throw new Error("Missing API Key");
+    try {
+        if (!data) throw new Error("No data provided for translation");
+
+        console.log(`Deep Translating analysis result to ${targetLanguage}...`);
+
+        // 1. Improved Recursive function to translate string values
+        const translateObject = async (obj: any): Promise<any> => {
+            if (typeof obj === 'string' && obj.trim().length > 0) {
+                // If the string is a risk level or severity, don't translate
+                if (['High', 'Medium', 'Low'].includes(obj)) return obj;
+
+                try {
+                    return await translateText(obj);
+                } catch (err) {
+                    console.warn(`Failed to translate string: ${obj.substring(0, 20)}...`, err);
+                    return obj; // Fallback to original English for this string
+                }
+            } else if (Array.isArray(obj)) {
+                return await Promise.all(obj.map(item => translateObject(item)));
+            } else if (typeof obj === 'object' && obj !== null) {
+                const newObj: any = {};
+                for (const key in obj) {
+                    // Skip keys, only translate values
+                    newObj[key] = await translateObject(obj[key]);
+                }
+                return newObj;
             }
+            return obj;
+        };
 
-            const prompt = `
-            Translate the following legal document analysis JSON object into ${targetLanguage}.
-            
-            IMPORTANT RULES:
-            1. Maintain the exact JSON structure and keys.
-            2. Only translate the string values. Do not translate keys like "summary_simple", "red_flags", "key_clauses", "what_it_means".
-            
-            PART 1: DATA TRANSLATION
-            Translate this JSON data:
-            ${JSON.stringify(data)}
+        const translatedData = await translateObject(data);
 
-            PART 2: UI LABELS TRANSLATION
-            Also translate these specific UI labels into ${targetLanguage}:
-            - "Legal Text Summarization"
-            - "What this means for you"
-            - "Key Clauses Breakdown"
-            - "Red Flags"
-            - "Analysis Result"
-            - "Back to Upload"
-            - "This tool is provided for informational purposes only and does not constitute legal advice."
-            
-            Output a SINGLE JSON object with two top-level keys:
-            {
-               "data": { ...translated_data_json... },
-               "labels": {
-                  "legal_summary": "...",
-                  "what_means": "...",
-                  "key_clauses": "...",
-                  "red_flags": "...",
-                  "analysis_result": "...",
-                  "back_to_upload": "...",
-                  "legal_disclaimer": "..."
-               }
+        // 2. Hindi UI Labels
+        const labels = targetLanguage.toLowerCase().includes('hindi') || targetLanguage === 'hi' ? {
+            legal_summary: "कानूनी पाठ सारांश (Summary)",
+            what_means: "आपके लिए इसका क्या मतलब है",
+            key_clauses: "महत्वपूर्ण खंड",
+            red_flags: "जोखिम (Red Flags)",
+            analysis_result: "विश्लेषण परिणाम",
+            back_to_upload: "वापस अपलोड पर जाएं",
+            legal_disclaimer: "यह उपकरण केवल सूचनात्मक उद्देश्यों के लिए है और कानूनी सलाह नहीं देता है।"
+        } : {
+            legal_summary: "Legal Text Summarization",
+            what_means: "What this means for you",
+            key_clauses: "Key Clauses Breakdown",
+            red_flags: "Red Flags",
+            analysis_result: "Analysis Result",
+            back_to_upload: "Back to Upload",
+            legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
+        };
+
+        return {
+            data: translatedData,
+            labels: labels
+        };
+
+    } catch (error) {
+        console.error("Deep Translation Pipeline failed:", error);
+        // Return original data with English labels so UI doesn't crash
+        return {
+            data: data,
+            labels: {
+                legal_summary: "Legal Text Summarization",
+                what_means: "What this means for you",
+                key_clauses: "Key Clauses Breakdown",
+                red_flags: "Red Flags",
+                analysis_result: "Analysis Result",
+                back_to_upload: "Back to Upload",
+                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
             }
-            
-            Return ONLY the valid JSON string. Do not wrap in markdown or code blocks.
-            `;
-
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:3000",
-                    "X-Title": "LegalLens AI",
-                },
-                body: JSON.stringify({
-                    "model": PRIMARY_MODEL,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-                    "response_format": { "type": "json_object" }
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Translation failed: ${response.status}`);
-            }
-
-            const resData = await response.json();
-            const textResponse = resData.choices[0]?.message?.content || "";
-
-            // Robust JSON extraction
-            let cleanText = textResponse.trim();
-            cleanText = cleanText.replace(/```json/gi, '').replace(/```/g, '').trim();
-
-            const firstOpen = cleanText.indexOf('{');
-            const lastClose = cleanText.lastIndexOf('}');
-
-            if (firstOpen !== -1 && lastClose !== -1) {
-                cleanText = cleanText.substring(firstOpen, lastClose + 1);
-                return JSON.parse(cleanText);
-            } else {
-                throw new Error("AI translation did not return valid JSON.");
-            }
-
-        } catch (error) {
-            console.error(`Translation attempt ${retryCount + 1} failed:`, error);
-
-            if (retryCount < 2) {
-                const waitMs = (retryCount + 1) * 2000;
-                await new Promise(resolve => setTimeout(resolve, waitMs));
-                return runTranslation(retryCount + 1);
-            }
-            throw error;
-        }
-    };
-
-    return await runTranslation();
+        };
+    }
 }

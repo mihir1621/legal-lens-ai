@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { extractTextFromFile } from '@/app/actions';
+import { translateText } from '@/app/actions/translate';
 import { analyzeLegalText } from '@/app/analyze';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -62,11 +63,10 @@ export default function DragDropUpload() {
                 textToAnalyze = result.text;
             }
 
-            console.log("Extracted text, sending to AI...");
+            console.log("Extracted text, analyzing with Hugging Face...");
 
-            // 1. Call AI Analysis
+            // 1. Legal Analysis (Now using HF Mistral via analyze.ts)
             const analysisResult = await analyzeLegalText(textToAnalyze);
-            console.log("AI Analysis Complete", analysisResult);
 
             if (analysisResult.error) {
                 alert(`Analysis Failed: ${analysisResult.error}`);
@@ -74,30 +74,35 @@ export default function DragDropUpload() {
                 return;
             }
 
+            console.log("Analysis Complete. Points found:", {
+                clauses: analysisResult.key_clauses?.length,
+                flags: analysisResult.red_flags?.length
+            });
+
             // 2. Save to Firestore
             const user = auth.currentUser;
             if (user) {
+                // Store the full analysis result
                 const docRef = await addDoc(collection(db, "documents"), {
                     userId: user.uid,
                     title: file ? file.name : "Text Snippet",
-                    originalText: textToAnalyze.substring(0, 1000) + "...", // Save preview
-                    analysis: analysisResult,
+                    originalText: textToAnalyze.substring(0, 5000),
+                    analysis: analysisResult, // This contains Clauses, Flags, and Summary
                     createdAt: serverTimestamp(),
-                    riskLevel: analysisResult.red_flags.some((f: any) => f.severity === 'High') ? 'High' :
-                        analysisResult.red_flags.length > 0 ? 'Medium' : 'Low'
+                    isAnalysis: true
                 });
 
                 // 3. Navigate to result
                 router.push(`/document/${docRef.id}`);
             } else {
-                console.warn("User not logged in, saving to local storage instead of Firestore for demo");
+                console.warn("User not logged in, saving to local storage");
                 localStorage.setItem("temp_analysis", JSON.stringify(analysisResult));
                 router.push('/document/temp');
             }
 
         } catch (err) {
             console.error(err);
-            alert("Analysis Failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            alert("Processing Failed: " + (err instanceof Error ? err.message : "Unknown error"));
         } finally {
             setIsUploading(false);
         }

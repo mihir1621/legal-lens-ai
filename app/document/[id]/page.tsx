@@ -33,14 +33,9 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
 
 
-    // Language State
     const [language, setLanguage] = useState('en');
+    const [translatedSummary, setTranslatedSummary] = useState(''); // New state for pre-translated summary
     const [isTranslating, setIsTranslating] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-    // Rate Limiting / Cooldown
-    const [cooldown, setCooldown] = useState(0);
-    const lastRequestTime = useRef<number>(0);
 
     useEffect(() => {
         async function fetchData() {
@@ -51,8 +46,21 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
 
                 if (docSnap.exists()) {
                     const docData = docSnap.data();
-                    setOriginalData(docData.analysis);
-                    setDisplayData(docData.analysis); // Default to original
+
+                    // Always treat as structured analysis
+                    const data = docData.analysis || {
+                        summary_simple: docData.originalText?.substring(0, 500) + "...",
+                        what_it_means: ["Analysis in progress or simplified view."],
+                        key_clauses: [],
+                        red_flags: []
+                    };
+
+                    setOriginalData(data);
+                    setDisplayData(data);
+
+                    if (docData.translatedText) {
+                        setTranslatedSummary(docData.translatedText);
+                    }
                 } else {
                     setError("Document not found");
                 }
@@ -69,6 +77,9 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     // Cache for translations: { [langCode]: { data, labels } }
     const [translationCache, setTranslationCache] = useState<Record<string, any>>({});
 
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+
     // Cooldown Timer Effect
     useEffect(() => {
         if (cooldown > 0) {
@@ -78,32 +89,11 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     }, [cooldown]);
 
     const handleLanguageChange = async (newLang: string) => {
-        /*
         if (newLang === language) return;
 
-        // Prevent rapid clicks (Cooldown check)
-        const now = Date.now();
-        if (now - lastRequestTime.current < 500) { // Reduced debounce for smoother feel
-            return;
-        }
-
-        // If cooldown active from previous 429
-        if (cooldown > 0) {
-            alert(`Please wait ${cooldown}s before translating again.`);
-            return;
-        }
-
-        setLanguage(newLang);
-
-        if (!originalData) return;
-
-        // Start Animation IMMEDIATELY for all switches
-        setIsTranslating(true);
-        lastRequestTime.current = Date.now();
-
-        // If switching back to English, just use the original data
+        // Reset if switching back to English
         if (newLang === 'en') {
-            await new Promise(r => setTimeout(r, 600)); // Smooth transition
+            setLanguage(newLang);
             setDisplayData(originalData);
             setLabels({
                 legal_summary: "Legal Text Summarization",
@@ -114,68 +104,42 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 back_to_upload: "Back to Upload",
                 legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
             });
-            setIsTranslating(false);
             return;
         }
 
-        // CHECK CACHE
+        // Check Cache first
         if (translationCache[newLang]) {
-            // Artificial delay (600ms) to let the beautiful animation play and give feedback
-            await new Promise(r => setTimeout(r, 800));
-
+            setLanguage(newLang);
             setDisplayData(translationCache[newLang].data);
             setLabels(translationCache[newLang].labels);
-            setIsTranslating(false);
             return;
         }
 
-        // FETCH NEW
-        try {
-            const targetLangName = INDIAN_LANGUAGES.find(l => l.code === newLang)?.name || 'English';
-            const translated = await translateAnalysisResult(originalData, targetLangName);
-
-            if (translated.data && translated.labels) {
-                // Update State and Cache
-                setDisplayData(translated.data);
-                setLabels(translated.labels);
-                setTranslationCache(prev => ({
-                    ...prev,
-                    [newLang]: { data: translated.data, labels: translated.labels }
-                }));
-            } else {
-                // Fallback if structure mismatch
-                setDisplayData(translated.data || originalData);
+        // If Hindi and we have the summary, but need full translation
+        if (newLang === 'hi') {
+            setIsTranslating(true);
+            try {
+                const result = await translateAnalysisResult(originalData, "Hindi");
+                if (result.data && result.labels) {
+                    setLanguage(newLang);
+                    setDisplayData(result.data);
+                    setLabels(result.labels);
+                    setTranslationCache(prev => ({
+                        ...prev,
+                        [newLang]: result
+                    }));
+                }
+            } catch (error) {
+                console.error("Full translation failed", error);
+                // Fallback to English but update language label
+                setLanguage(newLang);
+            } finally {
+                setIsTranslating(false);
             }
-
-        } catch (error) {
-            console.error("Translation failed", error);
-
-            // Revert to English/Original on failure
-            setDisplayData(originalData);
-            setLabels({
-                legal_summary: "Legal Text Summarization",
-                what_means: "What this means for you",
-                key_clauses: "Key Clauses Breakdown",
-                red_flags: "Red Flags",
-                analysis_result: "Analysis Result",
-                back_to_upload: "Back to Upload",
-                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
-            });
-            setLanguage('en');
-
-            // Check if it's our cleaned up 429 error
-            const errString = String(error);
-            if (errString.includes("busy") || errString.includes("Rate Limit")) {
-                setCooldown(10);
-                alert("Translation service is busy. Please wait 10 seconds.");
-            } else {
-                alert("Translation failed. displaying original text.");
-            }
-
-        } finally {
-            setIsTranslating(false);
+        } else {
+            // For other languages not supported by the local model yet
+            setLanguage(newLang);
         }
-        */
     };
 
     if (loading) {
@@ -248,7 +212,6 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 </div>
 
                 {/* Custom Animated Language Shifter (Clean version - no card glow) */}
-                {/* 
                 <div className="relative">
                     <button
                         onClick={() => !isTranslating && cooldown === 0 && setIsDropdownOpen(!isDropdownOpen)}
@@ -270,7 +233,6 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         {cooldown > 0 && <span className="text-xs text-orange-500 font-bold ml-1 animate-pulse">{cooldown}s</span>}
                     </button>
 
-                    
                     <div
                         className={`absolute right-0 mt-2 w-full rounded-xl border border-border bg-card shadow-xl z-50 overflow-hidden transition-all duration-300 origin-top ${isDropdownOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}
                     >
@@ -291,10 +253,9 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         </div>
                     </div>
                 </div>
-                 */}
 
                 {/* Background Overlay to close dropdown */}
-                {/* {isDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />} */}
+                {isDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />}
             </div>
 
             {/* Content Grid */}
