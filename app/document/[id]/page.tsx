@@ -14,10 +14,10 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     const resolvedParams = use(params);
     const { id } = resolvedParams;
 
-    const [originalData, setOriginalData] = useState<any>(null); // Store original (English)
-    const [displayData, setDisplayData] = useState<any>(null);   // Store currently displayed (translated or original)
+    const [originalData, setOriginalData] = useState<any>(null); // English version from Firestore
+    const [displayData, setDisplayData] = useState<any>(null);   // Data currently in view (translated or English)
 
-    // UI Labels State
+    // UI labels for quadrants that update based on selected language
     const [labels, setLabels] = useState({
         legal_summary: "Legal Text Summarization",
         what_means: "What this means for you",

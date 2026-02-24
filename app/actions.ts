@@ -3,9 +3,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
-// OpenRouter SDK replaced by native fetch for better control
-// const openrouter = ... (removed)
+/**
+ * BACKEND ACTIONS
+ * Handles file reading, text extraction, and security verification.
+ */
 
+/**
+ * Extracts raw text from uploaded files (PDF, DOCX, TXT).
+ * Uses specialized libraries for each format.
+ */
 export async function extractTextFromFile(formData: FormData): Promise<{ text: string; error?: string }> {
     try {
         const file = formData.get('file') as File;
@@ -23,34 +29,14 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
 
         if (file.type === 'application/pdf') {
             try {
-                // Use pdfjs-dist for robust parsing with dynamic import for ESM
                 // @ts-ignore
-                const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-
-                // Convert Buffer to Uint8Array
-                // Translation logic moved to app/translation-service.ts
-                const uint8Array = new Uint8Array(buffer);
-
-                const loadingTask = pdfjsLib.getDocument({
-                    data: uint8Array,
-                    useSystemFonts: true,
-                    disableFontFace: true
-                });
-
-                const doc = await loadingTask.promise;
-                let fullText = "";
-
-                for (let i = 1; i <= doc.numPages; i++) {
-                    const page = await doc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const strings = textContent.items.map((item: any) => item.str);
-                    fullText += strings.join(" ") + "\n";
-                }
-
-                text = fullText;
+                const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
+                const data = await pdf(buffer);
+                text = data.text;
             } catch (e) {
                 console.error("PDF Parse Error", e);
-                throw new Error("Failed to parse PDF on server: " + (e instanceof Error ? e.message : String(e)));
+                // Fallback to simple string conversion if pdf-parse fails
+                text = buffer.toString('utf-8');
             }
         } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             try {

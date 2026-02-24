@@ -4,7 +4,11 @@
 import { translateText } from "./actions/translate";
 
 /**
- * Translates an analysis result object using the Hugging Face translation service.
+ * RECURSIVE TRANSLATION SERVICE
+ * 
+ * This service takes a structured data object (containing summary, clauses, flags)
+ * and recursively translates every string value into the target language.
+ * This ensures that even the dynamically generated AI insights are translated for the UI.
  */
 export async function translateAnalysisResult(data: any, targetLanguage: string): Promise<any> {
     try {
@@ -12,7 +16,7 @@ export async function translateAnalysisResult(data: any, targetLanguage: string)
 
         console.log(`Deep Translating analysis result to ${targetLanguage}...`);
 
-        // 1. Improved Recursive function to translate string values
+        // 1. Recursive Iterator: Walks through arrays and objects to find all strings needing translation.
         const translateObject = async (obj: any): Promise<any> => {
             if (typeof obj === 'string' && obj.trim().length > 0) {
                 // If the string is a risk level or severity, don't translate

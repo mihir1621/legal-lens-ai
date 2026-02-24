@@ -8,11 +8,17 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 app = FastAPI()
 
+"""
+PYTHON TRANSLATION BACKEND
+Uses a Seq2Seq-LSTM model with Multi-Head Attention to translate English to Hindi.
+"""
+
 @app.get("/")
 def read_root():
     return {"status": "LegalLens Translation Service is running"}
 
-# Load model
+# Load Translation Model and Tokenizer from Hugging Face Hub
+# The model uses weights from the 'Daksh0505' repository.
 model_path = hf_hub_download(
     repo_id="Daksh0505/Seq2Seq-LSTM-MultiHeadAttention",
     filename="seq2seq-lstm-multiheadattention-12.3.keras"
