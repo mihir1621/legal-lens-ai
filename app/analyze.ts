@@ -1,160 +1,152 @@
 'use server';
 
 /**
- * ULTRA-RESILIENT ANALYSIS ENGINE (Hugging Face Only)
+ * HIGH-PRIORITY VISION ANALYSIS ENGINE (Version 10.0)
  * 
- * This module extracts legal insights from document text without external LLM APIs.
- * It uses the legacy Inference Widget API for maximum stability with free tokens.
+ * Specifically optimized for Direct Gemini Vision to ensure
+ * "High-Density" analysis works in one go for scans/images.
  */
 
-const MODELS = [
-    "mistralai/Mistral-7B-Instruct-v0.3",
-    "HuggingFaceH4/zephyr-7b-beta",
-    "google/gemma-2-9b-it"
-];
+interface LegalAnalysis {
+    summary_simple: string;
+    what_it_means: string[];
+    key_clauses: Array<{ title: string; explanation: string; risk: string }>;
+    red_flags: Array<{ reason: string; severity: string }>;
+}
 
-export async function analyzeLegalText(text: string) {
-    // 1. Get API Key
-    const apiKey = (process.env.HF_TOKEN || process.env.NEXT_PUBLIC_APIKEY || "").replace(/["']/g, "").trim();
+export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
+    const isVisionMode = text.startsWith('IMAGE_DATA:');
+    let base64Data = '';
+    let mimeType = '';
+    let cleanedText = text;
 
-    if (!apiKey) {
-        console.error("CRITICAL: No HF_TOKEN found in environment variables.");
-        return { error: "Missing HF_TOKEN. Please add it to your .env.local and RESTART your terminal." };
-    }
-
-    console.log(`Using Key starting with: ${apiKey.substring(0, 4)}...`);
-
-    // --- PRIORITY 1: GOOGLE GEMINI (via OpenRouter) ---
-    try {
-        console.log("Attempting Priority Analysis with Gemini...");
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000",
-                "X-Title": "LegalLens AI",
-            },
-            body: JSON.stringify({
-                "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a professional legal analyst. Analyze the document and return a detailed JSON object. You MUST respond with valid JSON only."
-                    },
-                    {
-                        "role": "user",
-                        "content": `Analyze this document and return JSON with keys: 
-                        - summary_simple (3-4 detailed sentences)
-                        - what_it_means (array of 3 points)
-                        - key_clauses (array of {title, explanation, risk: 'Low'|'Medium'|'High'})
-                        - red_flags (array of {reason, severity: 'Low'|'Medium'|'High'})
-
-                        TEXT: ${text.substring(0, 6000)}`
-                    }
-                ],
-                "response_format": { "type": "json_object" }
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const content = data.choices[0]?.message?.content;
-            if (content) {
-                const parsed = JSON.parse(content);
-                return {
-                    summary_simple: parsed.summary_simple || "Summary processing incomplete.",
-                    what_it_means: parsed.what_it_means || ["Manual review recommended."],
-                    key_clauses: parsed.key_clauses || [],
-                    red_flags: parsed.red_flags || []
-                };
-            }
-        } else {
-            console.warn(`Gemini Priority failed with status ${response.status}, rolling back to HF...`);
+    if (isVisionMode) {
+        const parts = text.split(';base64,');
+        mimeType = parts[0].replace('IMAGE_DATA:', '');
+        base64Data = parts[1];
+        console.log(`Vision Mode Active. Type: ${mimeType}, Size: ${base64Data.length}`);
+    } else {
+        cleanedText = text.trim();
+        if (cleanedText.length === 0) {
+            return {
+                summary_simple: "ERROR: Empty document detected.",
+                what_it_means: ["Analysis failed: 0 characters found."],
+                key_clauses: [],
+                red_flags: []
+            };
         }
-    } catch (err) {
-        console.error("Gemini Priority Analysis error:", err);
     }
 
-    // --- FALLBACK: HUGGING FACE MODEL CHAIN ---
-    // 2. Sequential Model Fallback Strategy
-    // If one model is busy or sleeping, it automatically attempts the next one.
-    for (const modelId of MODELS) {
+    const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
+    const orKey = (process.env.NEXT_PUBLIC_APIKEY || "").replace(/["']/g, "").trim();
+
+    const systemPrompt = `You are a Senior Legal Strategist. Provide a "Full Clarification" of the document.
+    STRICT RULES:
+    1. Language: ALWAYS respond in professional English.
+    2. Format: Use a numbered list (1., 2., 3.) in the summary for all mandates.
+    3. Style: Detailed, high-density, thematic breakdown. 
+    4. If the input is an image or scan, perform deep visual OCR first.`;
+
+    const userPrompt = `Analyze this legal document and provide a full expert clarification in English.
+    
+    Structure your JSON response exactly like this:
+    {
+        "summary_simple": "Detailed 6-8 sentence summary. MUST include 1. 2. 3. numbered list of mandates.",
+        "what_it_means": [
+            "CITIZENS: [Detailed bullet points...]",
+            "CONTRACTORS/BUILDERS: [Detailed bullet points...]",
+            "AUTHORITIES: [Detailed bullet points...]",
+            "IN SHORT: Overall takeaway."
+        ],
+        "key_clauses": [
+            {
+                "title": "📌 [A/B/C]. [Theme Name]",
+                "explanation": "Detailed breakdown... \\n👉 Impact: Detailed impact of this section.",
+                "risk": "Low/Medium/High"
+            }
+        ],
+        "red_flags": [
+            {
+                "reason": "⚠️ [Category]: [Detailed reasoning for the risk...]",
+                "severity": "Low/Medium/High"
+            }
+        ]
+    }
+
+    ${isVisionMode ? "READ AND ANALYZE THE ATTACHED IMAGE/PDF VISUALLY." : `DOCUMENT TEXT: ${cleanedText.substring(0, 15000)}`}`;
+
+    // --- STRATEGY 1: DIRECT GOOGLE GEMINI (Most Reliable for Vision) ---
+    if (googleKey) {
         try {
-            console.log(`Trying Legacy Inference API with model: ${modelId}`);
+            console.log("Attempting Direct Gemini Vision Strategy...");
+            const contents = isVisionMode ? [
+                {
+                    parts: [
+                        { text: `${systemPrompt}\n\n${userPrompt}` },
+                        { inlineData: { mimeType: mimeType, data: base64Data } }
+                    ]
+                }
+            ] : [
+                { parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+            ];
 
-            const response = await fetch(`https://api-inference.huggingface.co/models/${modelId}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    "inputs": `<s>[INST] You are a legal AI. Analyze this text and return ONLY a JSON object.
-                    
-                    Structure:
-                    {
-                        "summary_simple": "3 sentence summary",
-                        "what_it_means": ["point 1", "point 2"],
-                        "key_clauses": [{"title": "Name", "explanation": "Info", "risk": "Low"}],
-                        "red_flags": [{"reason": "Risk", "severity": "Low"}]
-                    }
-
-                    Text: ${text.substring(0, 3000)} [/INST]`,
-                    "parameters": {
-                        "max_new_tokens": 800,
-                        "return_full_text": false,
-                        "temperature": 0.1
-                    },
-                    "options": {
-                        "wait_for_model": true
-                    }
-                })
+                    contents,
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                }),
+                signal: AbortSignal.timeout(60000)
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.warn(`Model ${modelId} failed:`, data.error || response.statusText);
-                continue; // Try next model
-            }
-
-            // Extract the generated text
-            const output = Array.isArray(data) ? data[0].generated_text : data.generated_text;
-
-            if (output) {
-                // Parse the JSON out of the response
-                let clean = output.trim();
-                const start = clean.indexOf('{');
-                const end = clean.lastIndexOf('}');
-
-                if (start !== -1 && end !== -1) {
-                    try {
-                        const parsed = JSON.parse(clean.substring(start, end + 1));
-                        return {
-                            summary_simple: parsed.summary_simple || "Summary processing incomplete.",
-                            what_it_means: parsed.what_it_means || ["Manual review recommended."],
-                            key_clauses: parsed.key_clauses || [],
-                            red_flags: parsed.red_flags || []
-                        };
-                    } catch (e) {
-                        console.error("JSON Parse failed for model", modelId);
-                    }
+            if (res.ok) {
+                const data = await res.json();
+                const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (content) {
+                    console.log("Success with Direct Gemini Vision.");
+                    return JSON.parse(content);
                 }
+            } else {
+                const err = await res.text();
+                console.warn("Direct Gemini Vision failed:", err.substring(0, 200));
             }
-        } catch (err) {
-            console.error(`Network error with model ${modelId}:`, err);
-        }
+        } catch (e) { console.error("Direct Gemini Error:", e); }
     }
 
-    // 3. FINAL FALLBACK: If everything fails, provide a "Local" summary so the UI doesn't crash
-    // This uses the document text itself to populate the fields
-    const safeSummary = text.substring(0, 300).replace(/\s+/g, ' ') + "...";
+    // --- STRATEGY 2: OPENROUTER VISION FALLBACK ---
+    if (orKey) {
+        try {
+            console.log("Attempting OpenRouter Vision fallback...");
+            const messageContent: any = isVisionMode ? [
+                { type: "text", text: userPrompt },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }
+            ] : userPrompt;
 
+            const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${orKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: isVisionMode ? "google/gemini-2.0-flash-lite-preview-02-05:free" : "google/gemini-2.0-flash-lite-preview-02-05:free",
+                    messages: [{ role: "system", content: systemPrompt }, { role: "user", content: messageContent }],
+                    response_format: { type: "json_object" }
+                }),
+                signal: AbortSignal.timeout(60000)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const content = data.choices?.[0]?.message?.content;
+                if (content) return JSON.parse(content);
+            }
+        } catch (e) { console.warn("OR Vision failed"); }
+    }
+
+    // --- FINAL FALLBACK ---
     return {
-        summary_simple: "AI SERVICE BUSY. Local Preview: " + safeSummary,
-        what_it_means: ["The Hugging Face cloud service is currently under high load.", "Please check if your HF_TOKEN is a 'Read' token.", "Wait 1 minute and try again."],
-        key_clauses: [{ title: "Legal Review Pending", explanation: "The document text was extracted successfully, but AI cloud analysis timed out.", risk: "Low" }],
-        red_flags: [{ reason: "Cloud Analysis Timeout", severity: "Low" }]
+        summary_simple: "HIGH-DENSITY VISION ERROR: The AI cloud is unable to process this image/scan at the moment. Please ensure the image is clear or try uploading a digital PDF.",
+        what_it_means: ["Your document was received, but the visual reasoning chain failed."],
+        key_clauses: [],
+        red_flags: []
     };
 }

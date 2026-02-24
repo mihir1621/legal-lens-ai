@@ -272,7 +272,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                             </h2>
                         </div>
 
-                        <div className="text-lg leading-relaxed text-card-foreground/90 min-h-[100px]">
+                        <div className="text-lg leading-relaxed text-card-foreground/90 min-h-[100px] whitespace-pre-wrap">
                             {displayData.summary_simple}
                         </div>
                     </MagicCard>
@@ -287,7 +287,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                             {displayData.what_it_means && displayData.what_it_means.map((point: string, i: number) => (
                                 <li key={i} className="flex gap-3 text-sm">
                                     <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                    <span className="text-emerald-900 dark:text-emerald-100 font-medium leading-relaxed">{point}</span>
+                                    <span className="text-emerald-900 dark:text-emerald-100 font-medium leading-relaxed whitespace-pre-wrap">{point}</span>
                                 </li>
                             ))}
                         </ul>
@@ -311,7 +311,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                                             {clause.risk || 'Low'} Risk
                                         </span>
                                     </div>
-                                    <p className="text-sm text-muted-foreground">{clause.explanation}</p>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{clause.explanation}</p>
                                 </div>
                             ))}
                         </div>
@@ -328,7 +328,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                                 displayData.red_flags.map((flag: any, i: number) => (
                                     <div key={i} className="p-3 bg-white dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
                                         <div className="flex justify-between items-start mb-1">
-                                            <span className="font-semibold text-red-900 dark:text-red-200 text-sm">
+                                            <span className="font-semibold text-red-900 dark:text-red-200 text-sm whitespace-pre-wrap">
                                                 {/* Show 'reason' (Explanation) as main title if in English to avoid Marathi quotes */}
                                                 {language === 'en' ? flag.reason : (flag.text || flag.reason)}
                                             </span>

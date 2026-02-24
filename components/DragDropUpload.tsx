@@ -31,7 +31,9 @@ export default function DragDropUpload() {
         accept: {
             'application/pdf': ['.pdf'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'text/plain': ['.txt']
+            'text/plain': ['.txt'],
+            'image/jpeg': ['.jpg', '.jpeg'],
+            'image/png': ['.png']
         },
         maxFiles: 1
     });
@@ -63,10 +65,10 @@ export default function DragDropUpload() {
                 textToAnalyze = result.text;
             }
 
-            console.log("Extracted text, analyzing with Hugging Face...");
+            console.log("Analyzing document magic...");
 
-            // 1. Legal Analysis (Now using HF Mistral via analyze.ts)
-            const analysisResult = await analyzeLegalText(textToAnalyze);
+            // 1. Legal Analysis (Now with Vision support for images/scans)
+            const analysisResult: any = await analyzeLegalText(textToAnalyze);
 
             if (analysisResult.error) {
                 alert(`Analysis Failed: ${analysisResult.error}`);
@@ -178,7 +180,7 @@ export default function DragDropUpload() {
                                     {isDragActive ? "Drop text magic here!" : "Drag & drop your document"}
                                 </h3>
                                 <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
-                                    Supports PDF, DOCX, TXT. We'll analyze the fine print for you.
+                                    Supports PDF, DOCX, TXT, and **Images (JPG/PNG)**. Even scanned documents and photos work!
                                 </p>
 
                                 <motion.button

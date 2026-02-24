@@ -33,10 +33,18 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
                 const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
                 const data = await pdf(buffer);
                 text = data.text;
+
+                // If text is very short or empty, it's likely a scan. 
+                // Treat it as a visual document.
+                if (!text || text.trim().length < 50) {
+                    const base64 = buffer.toString('base64');
+                    text = `IMAGE_DATA:application/pdf;base64,${base64}`;
+                }
             } catch (e) {
                 console.error("PDF Parse Error", e);
-                // Fallback to simple string conversion if pdf-parse fails
-                text = buffer.toString('utf-8');
+                // If parsing fails, it might still be a valid file Gemini can read visually
+                const base64 = buffer.toString('base64');
+                text = `IMAGE_DATA:application/pdf;base64,${base64}`;
             }
         } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             try {
@@ -48,13 +56,20 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
                 console.error("Mammoth Error", e);
                 return { text: '', error: 'Failed to extract text from DOCX' };
             }
+        } else if (file.type.startsWith('image/')) {
+            // It's an image, convert to base64 so Gemini Vision can read it
+            const base64 = buffer.toString('base64');
+            const mimeType = file.type;
+            text = `IMAGE_DATA:${mimeType};base64,${base64}`;
         } else {
             // Assume text/plain
             text = buffer.toString('utf-8');
         }
 
-        // Basic cleaning to remove excessive whitespace
-        text = text.replace(/\s+/g, ' ').trim();
+        // Only clean if it's not raw image data
+        if (!text.startsWith('IMAGE_DATA:')) {
+            text = text.replace(/\s+/g, ' ').trim();
+        }
 
         return { text };
     } catch (error) {
