@@ -1,26 +1,66 @@
 "use server";
 
-import { db } from "@/lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
-
 const translationCache: Record<string, string> = {};
 
-export async function translateText(text: string) {
-    const sentence = text.trim();
-    if (!sentence) return "";
+// Language code to full name map for AI prompt
+const LANGUAGE_NAMES: Record<string, string> = {
+    hi: "Hindi",
+    mr: "Marathi",
+    gu: "Gujarati",
+    ta: "Tamil",
+    te: "Telugu",
+    kn: "Kannada",
+    ml: "Malayalam",
+    bn: "Bengali",
+    pa: "Punjabi",
+    en: "English",
+};
 
-    if (translationCache[sentence]) {
-        return translationCache[sentence];
+export async function translateText(text: string, targetLang: string = "hi") {
+    const sentence = text.trim();
+    if (!sentence || targetLang === "en") return sentence;
+
+    const cacheKey = `${targetLang}:${sentence}`;
+    if (translationCache[cacheKey]) {
+        return translationCache[cacheKey];
     }
 
-    // --- PRIORITY 1: GOOGLE GEMINI (via OpenRouter) ---
-    try {
-        const openRouterKey = process.env.NEXT_PUBLIC_APIKEY || process.env.HF_TOKEN;
-        if (openRouterKey) {
+    const targetLangName = LANGUAGE_NAMES[targetLang] || "Hindi";
+
+    // --- PRIORITY 1: DIRECT GOOGLE GEMINI (Fastest & Most Accurate) ---
+    const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
+    if (googleKey) {
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations, no quotes:\n\n${sentence}` }] }],
+                    generationConfig: { temperature: 0.1 }
+                }),
+                signal: AbortSignal.timeout(15000)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const translated = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                if (translated) {
+                    translationCache[cacheKey] = translated;
+                    return translated;
+                }
+            }
+        } catch (e) {
+            console.warn("Gemini Direct Translation failed, trying OpenRouter...");
+        }
+    }
+
+    // --- PRIORITY 2: OPENROUTER (Multi-language via Gemini Flash) ---
+    const openRouterKey = (process.env.NEXT_PUBLIC_APIKEY || "").replace(/["']/g, "").trim();
+    if (openRouterKey) {
+        try {
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${openRouterKey.replace(/["']/g, "").trim()}`,
+                    "Authorization": `Bearer ${openRouterKey}`,
                     "Content-Type": "application/json",
                     "HTTP-Referer": "http://localhost:3000",
                     "X-Title": "LegalLens AI",
@@ -28,66 +68,36 @@ export async function translateText(text: string) {
                 body: JSON.stringify({
                     "model": "google/gemini-2.0-flash-lite-preview-02-05:free",
                     "messages": [
-                        { "role": "system", "content": "You are a professional legal translator. Translate the following text strictly into Hindi. Return ONLY the translated text." },
+                        { "role": "system", "content": `You are a professional legal translator. Translate to ${targetLangName}. Return ONLY the translated text.` },
                         { "role": "user", "content": sentence }
                     ]
                 }),
+                signal: AbortSignal.timeout(20000)
             });
 
             if (response.ok) {
                 const data = await response.json();
                 const translatedText = data.choices[0]?.message?.content?.trim();
                 if (translatedText) {
-                    translationCache[sentence] = translatedText;
+                    translationCache[cacheKey] = translatedText;
                     return translatedText;
                 }
             }
+        } catch (err) {
+            console.warn("OpenRouter Translation failed, trying MyMemory...");
         }
-    } catch (err) {
-        console.warn("Gemini Priority Translation failed, trying local service...");
     }
 
-    // --- FALLBACK 1: LOCAL PYTHON SERVICE ---
+    // --- FALLBACK 1: MYMEMORY (Free, supports many Indian languages) ---
     try {
-        const serviceUrl = process.env.TRANSLATION_SERVICE_URL || "http://localhost:8001";
-        const res = await fetch(`${serviceUrl}/translate`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: sentence }),
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            if (data.translation) {
-                translationCache[sentence] = data.translation;
-                return data.translation;
-            }
-        }
-    } catch (err) {
-        console.warn("Primary Translation Service failed, trying cloud fallbacks...");
-    }
-
-    // --- FALLBACK 2: GOOGLE TRANSLATE API X ---
-    try {
-        const { translate } = await import('google-translate-api-x');
-        const res = await translate(sentence, { to: 'hi' });
-        if (res.text) {
-            translationCache[sentence] = res.text;
-            return res.text;
-        }
-    } catch (err) {
-        console.warn("Google Translate Fallback failed...");
-    }
-
-    // --- FALLBACK 3: MYMEMORY API (Free Translation) ---
-    try {
-        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentence)}&langpair=en|hi`;
-        const response = await fetch(url);
+        const langPair = `en|${targetLang}`;
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(sentence)}&langpair=${langPair}`;
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (response.ok) {
             const data = await response.json();
             const translatedText = data.responseData?.translatedText;
             if (translatedText && !translatedText.includes("MYMEMORY WARNING")) {
-                translationCache[sentence] = translatedText;
+                translationCache[cacheKey] = translatedText;
                 return translatedText;
             }
         }
@@ -95,56 +105,22 @@ export async function translateText(text: string) {
         console.warn("MyMemory Fallback failed...");
     }
 
-    // --- FALLBACK 4: HUGGING FACE TRANSLATOR ---
+    // --- FALLBACK 2: GOOGLE TRANSLATE FREE ENDPOINT ---
     try {
-        const hfToken = process.env.HF_TOKEN || process.env.NEXT_PUBLIC_APIKEY;
-        if (hfToken) {
-            const response = await fetch("https://api-inference.huggingface.co/models/Helsinki-NLP/opus-mt-en-hi", {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${hfToken.replace(/["']/g, "").trim()}` },
-                body: JSON.stringify({ inputs: sentence }),
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const translatedText = Array.isArray(data) ? data[0].translation_text : data.translation_text;
-                if (translatedText) {
-                    translationCache[sentence] = translatedText;
-                    return translatedText;
-                }
-            }
-        }
-    } catch (err) {
-        console.warn("Hugging Face Translator Fallback failed...");
-    }
-
-    // --- FALLBACK 5: MANUAL GOOGLE API FETCH ---
-    try {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(sentence)}`;
-        const response = await fetch(url);
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(sentence)}`;
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (response.ok) {
             const data = await response.json();
-            const translatedText = data[0].map((s: any) => s[0]).join("");
+            const translatedText = data[0]?.map((s: any) => s[0]).join("");
             if (translatedText) {
-                translationCache[sentence] = translatedText;
+                translationCache[cacheKey] = translatedText;
                 return translatedText;
             }
         }
     } catch (err) {
-        console.warn("Manual Google API Fallback failed...");
+        console.warn("Google Free Translate failed...");
     }
 
-    // --- FINAL FALLBACK: RETURN ORIGINAL ---
+    // Return original if all fail
     return sentence;
-}
-
-export async function translateDocument(text: string) {
-    const translation = await translateText(text);
-
-    await addDoc(collection(db, "translations"), {
-        original: text,
-        translated: translation,
-        createdAt: Date.now(),
-    });
-
-    return translation;
 }

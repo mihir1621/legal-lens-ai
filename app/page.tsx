@@ -92,7 +92,8 @@ export default function Home() {
           <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-6 pt-4">
             <Link
               href="/upload"
-              className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-base font-medium text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 hover:scale-105 active:scale-95"
+              className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 20px rgba(249,115,22,0.35)' }}
             >
               Analyze Document
               <ArrowRight className="ml-2 h-4 w-4" />

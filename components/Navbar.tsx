@@ -87,7 +87,10 @@ export default function Navbar() {
                         </>
                     ) : (
                         <Link href="/login">
-                            <button className="rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg hover:shadow-primary/25 flex items-center gap-2">
+                            <button
+                                className="rounded-full px-6 py-2 text-sm font-semibold transition-all flex items-center gap-2"
+                                style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
+                            >
                                 <User className="h-4 w-4" />
                                 Login
                             </button>

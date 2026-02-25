@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, use, useRef } from 'react';
-import { AlertTriangle, CheckCircle, Info, Loader2, ArrowLeft, Languages, FileText } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, Loader2, ArrowLeft, Languages, FileText, ClipboardList, BookOpen } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Link from 'next/link';
@@ -91,7 +91,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     const handleLanguageChange = async (newLang: string) => {
         if (newLang === language) return;
 
-        // Reset if switching back to English
+        // Reset to English
         if (newLang === 'en') {
             setLanguage(newLang);
             setDisplayData(originalData);
@@ -107,7 +107,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
             return;
         }
 
-        // Check Cache first
+        // Use cache if available
         if (translationCache[newLang]) {
             setLanguage(newLang);
             setDisplayData(translationCache[newLang].data);
@@ -115,30 +115,21 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
             return;
         }
 
-        // If Hindi and we have the summary, but need full translation
-        if (newLang === 'hi') {
-            setIsTranslating(true);
-            try {
-                const result = await translateAnalysisResult(originalData, "Hindi");
-                if (result.data && result.labels) {
-                    setLanguage(newLang);
-                    setDisplayData(result.data);
-                    setLabels(result.labels);
-                    setTranslationCache(prev => ({
-                        ...prev,
-                        [newLang]: result
-                    }));
-                }
-            } catch (error) {
-                console.error("Full translation failed", error);
-                // Fallback to English but update language label
+        // Translate for ANY non-English language
+        setIsTranslating(true);
+        try {
+            const result = await translateAnalysisResult(originalData, newLang);
+            if (result.data && result.labels) {
                 setLanguage(newLang);
-            } finally {
-                setIsTranslating(false);
+                setDisplayData(result.data);
+                setLabels(result.labels);
+                setTranslationCache(prev => ({ ...prev, [newLang]: result }));
             }
-        } else {
-            // For other languages not supported by the local model yet
-            setLanguage(newLang);
+        } catch (error) {
+            console.error("Translation failed:", error);
+            setLanguage(newLang); // Still switch for label purposes
+        } finally {
+            setIsTranslating(false);
         }
     };
 
@@ -358,6 +349,56 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                             )}
                         </div>
                     </MagicCard>
+
+                    {/* Documents Required — only shows if AI found required documents */}
+                    {displayData.documents_required && displayData.documents_required.length > 0 && (
+                        <MagicCard enableTilt={false} className="col-span-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/10 p-6 shadow-sm">
+                            <h2 className="text-xl font-semibold mb-5 flex items-center gap-2 text-blue-800 dark:text-blue-300">
+                                <ClipboardList className="h-5 w-5" />
+                                Documents Required
+                            </h2>
+
+                            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                {displayData.documents_required.map((doc: any, i: number) => (
+                                    <div key={i} className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-white dark:bg-blue-950/30 p-4 shadow-sm flex flex-col gap-3">
+                                        {/* Document name + index */}
+                                        <div className="flex items-start gap-2">
+                                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                                                {i + 1}
+                                            </span>
+                                            <h3 className="font-bold text-blue-900 dark:text-blue-200 text-sm leading-snug">{doc.name}</h3>
+                                        </div>
+
+                                        {/* Purpose */}
+                                        {doc.purpose && (
+                                            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                                                <span className="font-semibold">Purpose: </span>{doc.purpose}
+                                            </p>
+                                        )}
+
+                                        {/* NOTE: How to obtain */}
+                                        {doc.how_to_obtain && doc.how_to_obtain.length > 0 && (
+                                            <div className="mt-1 rounded-lg border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 p-3">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                    <BookOpen className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">NOTE — How to Obtain</span>
+                                                </div>
+                                                <ol className="space-y-1.5">
+                                                    {doc.how_to_obtain.map((step: string, j: number) => (
+                                                        <li key={j} className="flex gap-2 text-xs text-amber-900 dark:text-amber-200">
+                                                            <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400">{j + 1}.</span>
+                                                            <span>{step.replace(/^Step \d+:\s*/i, '')}</span>
+                                                        </li>
+                                                    ))}
+                                                </ol>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </MagicCard>
+                    )}
+
                 </MagicBento>
             )}
         </div>

@@ -7,43 +7,39 @@
 }
 
 :root {
-    /* Light Mode - Vibrant & Clean */
+    /* === 60-30-10 LIGHT THEME ===
+     * 60% White  → backgrounds, surfaces, space
+     * 30% Black  → text, borders, structure
+     * 10% Orange → buttons, highlights, active states, CTAs only
+    */
+
+    /* 60% — WHITE SURFACES */
     --background: #ffffff;
-    --foreground: #0f172a;
-    /* Slate 900 */
-
-    --card: #f8fafc;
-    /* Slate 50 */
-    --card-foreground: #0f172a;
-
+    --card: #f9f9f9;
     --popover: #ffffff;
-    --popover-foreground: #0f172a;
+    --muted: #f4f4f4;
 
-    --primary: #4f46e5;
-    /* Indigo 600 - The core vibrant brand color */
+    /* 30% — BLACK STRUCTURE & TYPOGRAPHY */
+    --foreground: #111111;
+    --card-foreground: #111111;
+    --popover-foreground: #111111;
+    --muted-foreground: #555555;
+    --border: #d4d4d4;
+    --input: #d4d4d4;
+    --secondary: #e5e5e5;
+    --secondary-foreground: #111111;
+
+    /* 10% — ORANGE ACCENT (CTAs, active states, highlights only) */
+    --primary: #f97316;
+    /* Orange 500 */
     --primary-foreground: #ffffff;
-
-    --secondary: #0ea5e9;
-    /* Sky 500 - Electric cyan accent */
-    --secondary-foreground: #ffffff;
-
-    --muted: #f1f5f9;
-    /* Slate 100 */
-    --muted-foreground: #64748b;
-    /* Slate 500 */
-
-    --accent: #f472b6;
-    /* Pink 400 - Vivid interaction highlights */
+    --accent: #f97316;
     --accent-foreground: #ffffff;
+    --ring: #f97316;
 
+    /* Destructive — kept standard red, unrelated to palette */
     --destructive: #ef4444;
-    /* Red 500 */
     --destructive-foreground: #ffffff;
-
-    --border: #e2e8f0;
-    /* Slate 200 */
-    --input: #e2e8f0;
-    --ring: #4f46e5;
 
     --radius: 0.75rem;
 }
@@ -166,12 +162,58 @@
     }
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     background: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
     transition: background-color 0.3s ease, color 0.3s ease;
     /* Smooth theme transition */
+}
+
+/* Custom Selection Colors */
+::selection {
+    background-color: rgba(249, 115, 22, 0.2);
+    /* Light Orange background */
+    color: #f97316;
+    /* Orange text */
+}
+
+.dark ::selection {
+    background-color: rgba(237, 237, 237, 0.2);
+    color: #ffffff;
+}
+
+/* Focused Ring Styling */
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Scrollbar Refinement */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d4d4d4;
+    border: 3px solid var(--background);
+    border-radius: 10px;
+}
+
+.dark ::webkit-scrollbar-thumb {
+    background: #262626;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a3a3a3;
 }
 
 /* Scrollbar Hiding Utilities */

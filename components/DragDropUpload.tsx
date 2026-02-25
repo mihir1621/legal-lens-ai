@@ -120,8 +120,8 @@ export default function DragDropUpload() {
                     whileHover={{ scale: 1.01, borderColor: "var(--primary)" }}
                     whileTap={{ scale: 0.98 }}
                     animate={{
-                        backgroundColor: isDragActive ? "rgba(139, 92, 246, 0.1)" : "rgba(255, 255, 255, 0)",
-                        borderColor: isDragActive ? "var(--primary)" : file ? "var(--primary)" : "var(--border)",
+                        backgroundColor: isDragActive ? "rgba(249, 115, 22, 0.08)" : "rgba(255, 255, 255, 0)",
+                        borderColor: isDragActive ? "#f97316" : file ? "#f97316" : "var(--border)",
                     }}
                     transition={{ duration: 0.3 }}
                     className={cn(
@@ -187,7 +187,10 @@ export default function DragDropUpload() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     type="button"
-                                    className="rounded-full bg-primary text-primary-foreground px-8 py-3 text-sm font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 hover:shadow-primary/40 transition-all"
+                                    className="rounded-full px-8 py-3 text-sm font-bold transition-all"
+                                    style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 14px rgba(249,115,22,0.35)' }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = '#ea6c0a')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = '#f97316')}
                                 >
                                     Browse Files
                                 </motion.button>
@@ -219,7 +222,8 @@ export default function DragDropUpload() {
                     <button
                         onClick={handleAnalyze}
                         disabled={(!file && !text) || isUploading}
-                        className="w-full sm:w-auto min-w-[200px] rounded-full bg-primary px-8 py-3 text-base font-medium text-white shadow-lg shadow-primary/25 transition-all hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto min-w-[200px] rounded-full px-8 py-3 text-base font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 20px rgba(249,115,22,0.35)' }}
                     >
                         {isUploading ? (
                             <>
