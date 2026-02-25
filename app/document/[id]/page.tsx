@@ -18,14 +18,15 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
     const [displayData, setDisplayData] = useState<any>(null);   // Data currently in view (translated or English)
 
     // UI labels for quadrants that update based on selected language
-    const [labels, setLabels] = useState({
+    const [labels, setLabels] = useState<Record<string, string>>({
         legal_summary: "Legal Text Summarization",
         what_means: "What this means for you",
         key_clauses: "Key Clauses Breakdown",
         red_flags: "Red Flags",
         analysis_result: "Analysis Result",
         back_to_upload: "Back to Upload",
-        legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
+        legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice.",
+        docs_required: "Documents Required"
     });
 
     const [loading, setLoading] = useState(true);
@@ -102,7 +103,8 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                 red_flags: "Red Flags",
                 analysis_result: "Analysis Result",
                 back_to_upload: "Back to Upload",
-                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice."
+                legal_disclaimer: "This tool is provided for informational purposes only and does not constitute legal advice.",
+                docs_required: "Documents Required"
             });
             return;
         }
@@ -355,7 +357,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
                         <MagicCard enableTilt={false} className="col-span-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/10 p-6 shadow-sm">
                             <h2 className="text-xl font-semibold mb-5 flex items-center gap-2 text-blue-800 dark:text-blue-300">
                                 <ClipboardList className="h-5 w-5" />
-                                Documents Required
+                                {labels.docs_required}
                             </h2>
 
                             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

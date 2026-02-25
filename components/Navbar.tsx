@@ -61,6 +61,7 @@ export default function Navbar() {
                             <Link href="/upload" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Analyze</Link>
                             <Link href="/history" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">History</Link>
                             <Link href="/compare" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">Compare</Link>
+                            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block">About</Link>
 
                             <div className="h-6 w-px bg-border hidden sm:block" />
 
@@ -86,21 +87,24 @@ export default function Navbar() {
                             </div>
                         </>
                     ) : (
-                        <Link href="/login">
-                            <button
-                                className="rounded-full px-6 py-2 text-sm font-semibold transition-all flex items-center gap-2"
-                                style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
-                            >
-                                <User className="h-4 w-4" />
-                                Login
-                            </button>
-                        </Link>
+                        <>
+                            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block mr-2">About</Link>
+                            <Link href="/login">
+                                <button
+                                    className="rounded-full px-6 py-2 text-sm font-semibold transition-all flex items-center gap-2"
+                                    style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
+                                >
+                                    <User className="h-4 w-4" />
+                                    Login
+                                </button>
+                            </Link>
+                        </>
                     )}
 
                     {/* Theme Toggle - Always Last */}
                     <ThemeToggle />
                 </div>
-            </div>
-        </nav>
+            </div >
+        </nav >
     );
 }
