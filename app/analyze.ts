@@ -18,8 +18,12 @@ const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist. Provide a "Fu
 ALWAYS respond in SIMPLE, SHORT, and CLEAR English. Avoid complex legalese.
 
 STRICT RULES FOR CONTENT:
-1. "summary_simple": Provide a point-wise informative description. SUSTAIN A STRICT LIMIT OF 500 CHARACTERS. If it exceeds 500, truncate it. Use bullet points (•) for:
-   • Purpose • Parties • Authority/Law • Duration.
+1. "summary_simple": Provide a point-wise informative description. SUSTAIN A STRICT LIMIT OF 500 CHARACTERS. Use a NEW LINE for each bullet point. Use bullet points (•) for:
+   • Purpose
+   • Parties
+   • Authority/Law
+   • Duration
+   (DO NOT put them on the same line).
 2. "key_clauses": Use 1-2 very short sentences only. No paragraphs.
 3. "what_it_means": Use simple, non-legal terminology.
 4. "red_flags": Maximum 10 words per reason.

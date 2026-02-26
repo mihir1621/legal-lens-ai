@@ -1,6 +1,6 @@
 'use client';
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, FileText, Search } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,11 +77,19 @@ export default function Home() {
       <section className="relative w-full overflow-hidden px-4 pt-20 pb-32 text-center md:pt-32">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
 
-        <div className="container mx-auto max-w-4xl space-y-6">
-          <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary backdrop-blur-sm">
+        <motion.div
+          className="container mx-auto max-w-4xl space-y-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <motion.div
+            className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-bold text-white backdrop-blur-sm"
+            whileHover={{ scale: 1.05 }}
+          >
             <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
             AI-Powered Legal Simplification
-          </div>
+          </motion.div>
 
           <MagnifyingHeroHeading />
 
@@ -92,24 +100,36 @@ export default function Home() {
           <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-6 pt-4">
             <Link
               href="/upload"
-              className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-semibold transition-all hover:scale-105 active:scale-95"
-              style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 20px rgba(249,115,22,0.35)' }}
+              className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-semibold transition-all relative overflow-hidden group shadow-lg"
+              style={{ background: '#f97316', color: '#ffffff' }}
             >
-              Analyze Document
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <motion.div
+                className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"
+              />
+              <span className="relative z-10 flex items-center">
+                Analyze Document
+                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
             </Link>
             <Link
               href="#features"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-background/50 px-8 text-base font-medium text-foreground backdrop-blur-sm transition-all hover:bg-muted"
+              className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-background/50 px-8 text-base font-medium text-foreground backdrop-blur-sm transition-all hover:bg-muted hover:scale-105 active:scale-95"
             >
               See How It Works
             </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="container mx-auto px-4 py-24">
+      <motion.section
+        id="features"
+        className="container mx-auto px-4 py-24"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
         <h2 className="mb-16 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Everything You Need to Sign With Confidence
         </h2>
@@ -132,16 +152,27 @@ export default function Home() {
               description: "Compare two contracts side-by-side to see differences in terms and penalties."
             }
           ].map((feature, i) => (
-            <div key={i} className="group relative rounded-2xl border border-border bg-card p-8 shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
-              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                <feature.icon className="h-6 w-6" />
+            <motion.div
+              key={i}
+              className="group relative rounded-2xl border border-border bg-card p-8 shadow-sm transition-all overflow-hidden"
+              whileHover={{ y: -10, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative z-10">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                  <feature.icon className="h-6 w-6" />
+                </div>
+                <h3 className="mb-2 text-xl font-semibold text-foreground group-hover:text-primary transition-colors">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
               </div>
-              <h3 className="mb-2 text-xl font-semibold text-foreground">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
