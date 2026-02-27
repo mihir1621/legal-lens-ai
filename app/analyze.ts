@@ -67,10 +67,10 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
 
     const userPrompt = buildUserPrompt(cleanedText, isVisionMode);
 
-    // 1. TRY DIRECT GEMINI (PRIORITY)
+    // 1. TRY DIRECT GEMINI (PRIORITY — fast timeout)
     if (googleKey) {
         try {
-            console.log("[Analyzer] Attempting Strategy 1: Direct Gemini");
+            console.log("[Analyzer] Attempting Strategy 1: Direct Gemini (gemini-2.0-flash)");
             const contents = isVisionMode
                 ? [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }, { inlineData: { mimeType, data: base64Data } }] }]
                 : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }];
@@ -78,33 +78,39 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents, generationConfig: { responseMimeType: "application/json", temperature: 0.1 } }),
-                signal: AbortSignal.timeout(60000)
+                body: JSON.stringify({
+                    contents,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: 0.1,
+                        maxOutputTokens: 2048
+                    }
+                }),
+                signal: AbortSignal.timeout(25000)
             });
 
             if (res.ok) {
                 const data = await res.json();
                 const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (raw) return JSON.parse(raw);
+                if (raw) {
+                    console.log("[Analyzer] Success using Direct Gemini");
+                    return JSON.parse(raw);
+                }
             }
-        } catch (e) { console.warn("[Analyzer] Direct Gemini failed"); }
+        } catch (e) { console.warn("[Analyzer] Direct Gemini failed:", e); }
     }
 
-    // 2. TRY OPENROUTER WITH EXTENSIVE FREE LIST
+    // 2. TRY OPENROUTER — RACE TOP 3 MODELS IN PARALLEL
     if (orKey) {
         const MODELS = [
             "google/gemma-3-27b-it:free",
             "qwen/qwen3-next-80b-a3b-instruct:free",
             "stepfun/step-3.5-flash:free",
-            "upstage/solar-pro-3:free",
-            "google/gemma-3-12b-it:free",
-            "nousresearch/hermes-3-llama-3.1-405b:free",
-            "nvidia/nemotron-nano-12b-v2-vl:free"
         ];
 
-        for (const modelId of MODELS) {
+        const callModel = async (modelId: string): Promise<LegalAnalysis | null> => {
             try {
-                console.log(`[Analyzer] Attempting OpenRouter (${modelId})`);
+                console.log(`[Analyzer] Racing OpenRouter (${modelId})`);
                 const messageContent = (isVisionMode && (modelId.includes("vl") || modelId.includes("pixtral")))
                     ? [{ type: "text", text: userPrompt }, { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }]
                     : userPrompt;
@@ -120,9 +126,10 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                     body: JSON.stringify({
                         model: modelId,
                         messages: [{ role: "system", content: ANALYSIS_PROMPT_SYSTEM }, { role: "user", content: messageContent }],
-                        temperature: 0.1
+                        temperature: 0.1,
+                        max_tokens: 2048
                     }),
-                    signal: AbortSignal.timeout(45000)
+                    signal: AbortSignal.timeout(20000)
                 });
 
                 if (res.ok) {
@@ -130,16 +137,33 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                     const raw = data.choices?.[0]?.message?.content;
                     if (raw) {
                         const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || raw;
-                        try {
-                            const parsed = JSON.parse(jsonStr);
-                            if (parsed.summary_simple) {
-                                console.log(`[Analyzer] Success using ${modelId}`);
-                                return parsed;
-                            }
-                        } catch { continue; }
+                        const parsed = JSON.parse(jsonStr);
+                        if (parsed.summary_simple) {
+                            console.log(`[Analyzer] Race won by ${modelId}`);
+                            return parsed;
+                        }
                     }
                 }
-            } catch { continue; }
+            } catch { /* model failed, others may still win */ }
+            return null;
+        };
+
+        // Race all models — first valid response wins
+        const result = await Promise.any(
+            MODELS.map(m => callModel(m).then(r => { if (r) return r; throw new Error('no result'); }))
+        ).catch(() => null);
+
+        if (result) return result;
+
+        // Sequential fallback for remaining models
+        const FALLBACK_MODELS = [
+            "upstage/solar-pro-3:free",
+            "google/gemma-3-12b-it:free",
+        ];
+
+        for (const modelId of FALLBACK_MODELS) {
+            const res = await callModel(modelId);
+            if (res) return res;
         }
     }
 
