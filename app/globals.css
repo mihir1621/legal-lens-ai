@@ -225,3 +225,118 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* PDF Export Utilities - FORCED DARK MODE */
+.pdf-only {
+    display: none !important;
+}
+
+.is-exporting .pdf-only {
+    display: flex !important;
+}
+
+.is-exporting {
+    background: #000000 !important;
+    padding: 60px 40px !important;
+    color: #ededed !important;
+}
+
+.is-exporting * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+}
+
+/* Force Dark Theme Variables during Export */
+.is-exporting {
+    --background: #000000;
+    --foreground: #ededed;
+    --card: #121212;
+    --card-foreground: #ededed;
+    --border: #262626;
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
+    --secondary: #1a1a1a;
+    --secondary-foreground: #ededed;
+}
+
+/* Dark Mode Overrides for Export */
+.is-exporting .bg-emerald-50,
+.is-exporting .dark .bg-emerald-900\/10,
+.is-exporting .bg-emerald-900\/10 {
+    background-color: rgba(6, 78, 59, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.is-exporting .text-emerald-700,
+.is-exporting .text-emerald-600,
+.is-exporting .text-emerald-400 {
+    color: #34d399 !important;
+}
+
+.is-exporting .bg-red-50,
+.is-exporting .dark .bg-red-900\/10,
+.is-exporting .bg-red-900\/10 {
+    background-color: rgba(127, 29, 29, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.is-exporting .text-red-700,
+.is-exporting .text-red-900,
+.is-exporting .text-red-400 {
+    color: #f87171 !important;
+}
+
+.is-exporting .bg-blue-50,
+.is-exporting .dark .bg-blue-900\/10,
+.is-exporting .bg-blue-900\/10 {
+    background-color: rgba(30, 58, 138, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.is-exporting .text-blue-800,
+.is-exporting .text-blue-900,
+.is-exporting .text-blue-300 {
+    color: #93c5fd !important;
+}
+
+.is-exporting .bg-amber-50,
+.is-exporting .dark .bg-amber-900\/10,
+.is-exporting .bg-amber-900\/10 {
+    background-color: rgba(120, 53, 15, 0.2) !important;
+    border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.is-exporting .text-amber-700,
+.is-exporting .text-amber-600,
+.is-exporting .text-amber-400 {
+    color: #fbbf24 !important;
+}
+
+.is-exporting .bg-card,
+.is-exporting .bg-background {
+    background-color: #121212 !important;
+    border-color: #262626 !important;
+}
+
+.is-exporting .text-primary {
+    color: #f97316 !important;
+}
+
+.is-exporting .bg-primary {
+    background-color: #f97316 !important;
+}
+
+.is-exporting .border-primary {
+    border-color: #f97316 !important;
+}
+
+.is-exporting .text-foreground,
+.is-exporting .text-card-foreground {
+    color: #ededed !important;
+}
+
+.is-exporting .text-muted-foreground {
+    color: #a3a3a3 !important;
+}
