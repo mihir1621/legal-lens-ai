@@ -1,5 +1,6 @@
 'use client';
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
@@ -139,38 +140,204 @@ export default function Home() {
             {
               icon: FileText,
               title: "Instant Summaries",
-              description: "Get concise, plain English explanations of complex legal jargon and clauses."
+              description: "Get concise, plain English explanations of complex legal jargon and clauses.",
+              details: ["Breaks down complex clauses", "Plain English translations", "Key obligations highlighted", "Action items extracted"]
             },
             {
               icon: ShieldCheck,
               title: "Risk Detection",
-              description: "Identify hidden clauses, non-refundable deposits, and unfair liability terms."
+              description: "Identify hidden clauses, non-refundable deposits, and unfair liability terms.",
+              details: ["Flags unfair terms", "Spots hidden penalties", "Liability analysis", "Risk severity scoring"]
             },
             {
               icon: Search,
               title: "Smart Comparison",
-              description: "Compare two contracts side-by-side to see differences in terms and penalties."
+              description: "Compare two contracts side-by-side to see differences in terms and penalties.",
+              details: ["Side-by-side diff view", "Clause-level matching", "Penalty comparison", "Missing terms detection"]
             }
           ].map((feature, i) => (
             <motion.div
               key={i}
-              className="group relative rounded-2xl border border-border bg-card p-8 shadow-sm transition-all overflow-hidden"
-              whileHover={{ y: -10, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
-              initial={{ opacity: 0, y: 20 }}
+              className="flip-card h-64 rounded-2xl"
+              initial={{ opacity: 1, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative z-10">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                  <feature.icon className="h-6 w-6" />
+              <div className="flip-card-inner">
+                {/* FRONT */}
+                <div className="flip-card-front border border-border bg-card p-8 flex flex-col justify-center">
+                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <feature.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-2 text-xl font-semibold text-foreground">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-foreground group-hover:text-primary transition-colors">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
+
+                {/* BACK */}
+                <div className="flip-card-back flip-back-feature flex flex-col justify-center items-center p-8 text-center">
+                  <div className="icon-wrap mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl">
+                    <feature.icon className="h-6 w-6" />
+                  </div>
+                  <h4 className="text-lg font-bold mb-4">{feature.title}</h4>
+                  <ul className="space-y-2 text-left w-full px-2">
+                    {feature.details.map((detail, j) => (
+                      <li key={j} className="flex items-start gap-2 text-sm">
+                        <span className="dot-accent mt-1 h-1.5 w-1.5 rounded-full shrink-0" />
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </motion.div>
           ))}
+        </div>
+
+        <div className="mt-32">
+          <h3 className="mb-12 text-center text-2xl font-bold text-foreground sm:text-3xl">
+            Documents We Simplify for You
+          </h3>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                title: "Rental Agreements",
+                description: "Lease terms, deposits, and maintenance clauses.",
+                image: "/documents/rental-agreement.png",
+                details: ["Security deposit rules", "Maintenance responsibilities", "Early termination penalties", "Renewal & rent escalation"]
+              },
+              {
+                title: "Employment Contracts",
+                description: "Offer letters, notice periods, and benefits.",
+                image: "/documents/employment-contract.png",
+                details: ["Compensation & bonuses", "Non-compete clauses", "Notice period terms", "Termination conditions"]
+              },
+              {
+                title: "Service Agreements",
+                description: "Deliverables, payment terms, and timelines.",
+                image: "/documents/service-agreement.png",
+                details: ["Scope of services", "Payment milestones", "Liability limitations", "Warranty provisions"]
+              },
+              {
+                title: "NDAs & Policies",
+                description: "Confidentiality and data protection terms.",
+                image: "/documents/nda.png",
+                details: ["Confidential info scope", "Duration of obligation", "Permitted disclosures", "Breach consequences"]
+              },
+              {
+                title: "Loan Agreements",
+                description: "Interest rates, repayment schedules, and collateral.",
+                image: "/documents/loan-agreement.png",
+                details: ["Interest rate type", "Repayment schedule", "Collateral requirements", "Default & penalties"]
+              },
+              {
+                title: "Partnership Deeds",
+                description: "Profit sharing, roles, and dissolution terms.",
+                image: "/documents/partnership.png",
+                details: ["Capital contributions", "Profit/loss sharing", "Decision-making rights", "Exit & dissolution"]
+              },
+              {
+                title: "IP Agreements",
+                description: "Copyrights, trademarks, and ownership rights.",
+                image: "/documents/ip-agreement.png",
+                details: ["Ownership transfer", "License scope & limits", "Royalty terms", "Infringement remedies"]
+              },
+              {
+                title: "Consulting Contracts",
+                description: "Scope of work, hourly rates, and deliverables.",
+                image: "/documents/consulting.png",
+                details: ["Engagement scope", "Fee structure", "Intellectual property", "Confidentiality terms"]
+              },
+              {
+                title: "Privacy Policies",
+                description: "Data collection, user rights, and tracking terms.",
+                image: "/documents/privacy-policy.png",
+                details: ["Data collected types", "Third-party sharing", "User opt-out rights", "Retention periods"]
+              },
+              {
+                title: "Operating Agreements",
+                description: "Business ownership, roles, and voting rights.",
+                image: "/documents/operating-agreement.png",
+                details: ["Member responsibilities", "Voting procedures", "Profit distribution", "Amendment process"]
+              },
+              {
+                title: "SaaS Agreements",
+                description: "Service limits, data ownership, and SLAs.",
+                image: "/documents/saas-service.png",
+                details: ["Uptime guarantees", "Data portability", "Usage limitations", "Auto-renewal traps"]
+              },
+              {
+                title: "Real Estate Sale",
+                description: "Purchase terms, deadlines, and contingencies.",
+                image: "/documents/real-estate.png",
+                details: ["Purchase price terms", "Inspection deadlines", "Financing contingencies", "Closing conditions"]
+              },
+              {
+                title: "Wills & Trusts",
+                description: "Estate planning, beneficiaries, and authority.",
+                image: "/documents/will-trust.png",
+                details: ["Beneficiary details", "Asset distribution", "Executor powers", "Trust conditions"]
+              },
+              {
+                title: "Non-Compete Agreements",
+                description: "Restrictive covenants, duration, and scope.",
+                image: "/documents/non-compete.png",
+                details: ["Geographic restrictions", "Duration limits", "Industry scope", "Enforcement penalties"]
+              },
+              {
+                title: "Power of Attorney",
+                description: "Authority grants, limitations, and revocation.",
+                image: "/documents/power-of-attorney.png",
+                details: ["Powers granted", "Effective conditions", "Revocation process", "Agent limitations"]
+              },
+              {
+                title: "Vendor Contracts",
+                description: "Supply terms, pricing, and delivery schedules.",
+                image: "/documents/vendor-contract.png",
+                details: ["Pricing & discounts", "Delivery timelines", "Quality standards", "Dispute resolution"]
+              }
+            ].map((doc, i) => (
+              <motion.div
+                key={i}
+                className="flip-card h-48 sm:h-64 rounded-2xl"
+                initial={{ opacity: 1, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+              >
+                <div className="flip-card-inner">
+                  {/* FRONT */}
+                  <div className="flip-card-front">
+                    <Image
+                      src={doc.image}
+                      alt={doc.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      className="object-cover"
+                      priority={i < 4}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+                      <h4 className="text-lg font-bold text-white mb-1">{doc.title}</h4>
+                      <p className="text-sm text-white/80 line-clamp-2">{doc.description}</p>
+                    </div>
+                  </div>
+
+                  {/* BACK */}
+                  <div className="flip-card-back flip-back-doc flex flex-col justify-center items-center p-5 text-center">
+                    <h4 className="text-base sm:text-lg font-bold mb-3">{doc.title}</h4>
+                    <ul className="space-y-1.5 text-left w-full px-2">
+                      {doc.details.map((detail, j) => (
+                        <li key={j} className="flex items-start gap-2 text-xs sm:text-sm">
+                          <span className="dot-accent mt-0.5 h-1.5 w-1.5 rounded-full shrink-0" />
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </motion.section>
     </div>

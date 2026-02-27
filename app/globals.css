@@ -6,6 +6,127 @@
     }
 }
 
+/* 3D Flip Card */
+.flip-card {
+    perspective: 1200px;
+}
+
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.flip-card:hover .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.flip-card-back {
+    transform: rotateY(180deg);
+}
+
+/* Feature Cards — Back Face (Light: warm orange-amber | Dark: deep indigo-violet) */
+.flip-back-feature {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 40%, #fed7aa 100%);
+    color: #1c1917;
+    border: 1px solid rgba(249, 115, 22, 0.15);
+}
+
+.flip-back-feature h4 {
+    color: #1c1917;
+}
+
+.flip-back-feature li {
+    color: #44403c;
+}
+
+.flip-back-feature .dot-accent {
+    background-color: #f97316;
+}
+
+.flip-back-feature .icon-wrap {
+    background-color: rgba(249, 115, 22, 0.12);
+}
+
+.flip-back-feature .icon-wrap svg {
+    color: #f97316;
+}
+
+.dark .flip-back-feature {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #3730a3 100%);
+    color: #e0e7ff;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.dark .flip-back-feature h4 {
+    color: #ffffff;
+}
+
+.dark .flip-back-feature li {
+    color: rgba(224, 231, 255, 0.85);
+}
+
+.dark .flip-back-feature .dot-accent {
+    background-color: #818cf8;
+}
+
+.dark .flip-back-feature .icon-wrap {
+    background-color: rgba(129, 140, 248, 0.15);
+}
+
+.dark .flip-back-feature .icon-wrap svg {
+    color: #a5b4fc;
+}
+
+/* Document Cards — Back Face (Light: warm orange-amber | Dark: deep orange-brown) */
+.flip-back-doc {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 40%, #fed7aa 100%);
+    color: #7c2d12;
+    border: 1px solid rgba(249, 115, 22, 0.15);
+}
+
+.flip-back-doc h4 {
+    color: #7c2d12;
+}
+
+.flip-back-doc li {
+    color: #44403c;
+}
+
+.flip-back-doc .dot-accent {
+    background-color: #f97316;
+}
+
+.dark .flip-back-doc {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #3730a3 100%);
+    color: #e0e7ff;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.dark .flip-back-doc h4 {
+    color: #ffffff;
+}
+
+.dark .flip-back-doc li {
+    color: rgba(224, 231, 255, 0.85);
+}
+
+.dark .flip-back-doc .dot-accent {
+    background-color: #818cf8;
+}
+
 :root {
     /* === 60-30-10 LIGHT THEME ===
      * 60% White  → backgrounds, surfaces, space
