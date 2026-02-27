@@ -22,20 +22,9 @@ const sections = [
     }
 ];
 
-const containerVariants = {
-    hidden: {},
-    visible: { transition: { staggerChildren: 0.1 } }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-};
-
 export default function PrivacyPolicy() {
     return (
         <div className="min-h-screen relative overflow-hidden">
-            {/* Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="container mx-auto max-w-3xl px-4 py-16 relative z-10">
@@ -62,16 +51,13 @@ export default function PrivacyPolicy() {
                     <p className="text-muted-foreground">Last updated: February 2026</p>
                 </motion.div>
 
-                <motion.div
-                    className="space-y-5"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
+                <div className="space-y-5">
                     {sections.map((section, i) => (
                         <motion.div
                             key={i}
-                            variants={itemVariants}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: i * 0.1 }}
                             className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
                         >
                             <div className="flex items-start gap-4">
@@ -85,7 +71,7 @@ export default function PrivacyPolicy() {
                             </div>
                         </motion.div>
                     ))}
-                </motion.div>
+                </div>
             </div>
         </div>
     );

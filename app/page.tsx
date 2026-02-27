@@ -1,11 +1,72 @@
 'use client';
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import MagnifyingHeroHeading from "@/components/hero/MagnifyingHeroHeading";
+
+function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
+      className={`relative rounded-2xl border overflow-hidden transition-all duration-500 ${open
+          ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/5'
+          : 'border-border bg-card hover:border-primary/20 hover:shadow-sm'
+        }`}
+    >
+      {/* Left accent bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all duration-500 ${open ? 'bg-gradient-to-b from-primary via-primary/70 to-primary/30' : 'bg-transparent'
+        }`} />
+
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-4 p-5 pl-6 text-left cursor-pointer group"
+      >
+        <span className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all duration-300 ${open
+            ? 'bg-primary text-white scale-110'
+            : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+          }`}>
+          {String(index + 1).padStart(2, '0')}
+        </span>
+        <span className={`flex-1 font-semibold transition-colors duration-300 ${open ? 'text-primary' : 'text-foreground'
+          }`}>
+          {question}
+        </span>
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
+          <ChevronDown className={`h-5 w-5 shrink-0 transition-colors duration-300 ${open ? 'text-primary' : 'text-muted-foreground'
+            }`} />
+        </motion.div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="faq-answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <p className="px-5 pl-[4.5rem] pb-5 text-sm text-muted-foreground leading-relaxed">
+              {answer}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
 
 export default function Home() {
   const [showGreeting, setShowGreeting] = useState(false);
@@ -338,6 +399,53 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </motion.section>
+
+      {/* FAQ Section */}
+      <motion.section
+        className="container mx-auto px-4 py-24"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <h2 className="mb-4 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          Frequently Asked Questions
+        </h2>
+        <p className="mb-12 text-center text-muted-foreground max-w-xl mx-auto">
+          Quick answers to common questions about LegalLens AI
+        </p>
+
+        <div className="max-w-2xl mx-auto space-y-3">
+          {[
+            {
+              q: "Is LegalLens AI a substitute for a lawyer?",
+              a: "No. LegalLens provides AI-powered summaries and risk detection for informational purposes only. Always consult a qualified attorney for legal decisions."
+            },
+            {
+              q: "What types of documents can I upload?",
+              a: "We support PDF, DOCX, TXT, and image files (JPG/PNG). Even scanned documents and photos of contracts work — our AI can read them visually."
+            },
+            {
+              q: "Is my document data stored or shared?",
+              a: "Your uploaded documents are processed in real-time and never stored permanently. Analysis results are saved to your history, but original files are discarded after processing."
+            },
+            {
+              q: "How accurate is the AI analysis?",
+              a: "Our AI is powered by Google Gemini and provides high-quality analysis. However, like any AI, it may occasionally miss nuances. We recommend using it as a first pass before consulting a professional."
+            },
+            {
+              q: "Is LegalLens free to use?",
+              a: "Yes! LegalLens AI is currently free. You can upload documents, get analysis, compare contracts, and export reports at no cost."
+            },
+            {
+              q: "Can I analyze documents in other languages?",
+              a: "Yes! While documents should be uploaded in English, you can translate the analysis results into 10+ Indian languages including Hindi, Marathi, Tamil, Telugu, and more."
+            }
+          ].map((faq, i) => (
+            <FAQItem key={i} question={faq.q} answer={faq.a} index={i} />
+          ))}
         </div>
       </motion.section>
     </div>
