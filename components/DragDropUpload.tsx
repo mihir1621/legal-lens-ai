@@ -83,29 +83,43 @@ export default function DragDropUpload() {
             });
 
             // 2. Save to Firestore
-            const user = auth.currentUser;
+            let user = auth.currentUser;
+
+            // Re-check auth and force token refresh if session is old
+            if (!user) {
+                console.log("Waiting for auth to re-initialize...");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                user = auth.currentUser;
+            }
+
             if (user) {
-                console.log("Saving to Firestore for user:", user.uid);
+                console.log("Refreshing token and saving for user:", user.uid);
+                await user.getIdToken(true); // Force refresh token to ensure it's not expired
+
                 // Store the full analysis result
                 const docRef = await addDoc(collection(db, "documents"), {
                     userId: user.uid,
                     title: file ? file.name : "Text Snippet",
                     originalText: textToAnalyze.substring(0, 5000),
-                    analysis: analysisResult, // This contains Clauses, Flags, and Summary
+                    analysis: analysisResult,
                     createdAt: serverTimestamp(),
                     isAnalysis: true
                 });
                 console.log("Document saved with ID:", docRef.id);
                 router.push(`/document/${docRef.id}`);
             } else {
-                console.warn("User not logged in, saving to local storage");
+                console.warn("User session lost during analysis, saving to local storage");
                 localStorage.setItem("temp_analysis", JSON.stringify(analysisResult));
                 router.push('/document/temp');
             }
 
-        } catch (err) {
-            console.error(err);
-            alert("Processing Failed: " + (err instanceof Error ? err.message : "Unknown error"));
+        } catch (err: any) {
+            console.error("Analysis/Save Error:", err);
+            if (err?.code === 'permission-denied') {
+                alert("Firestore Permission Error: Check your Firebase Security Rules and ensure your account is verified.");
+            } else {
+                alert("Processing Failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            }
         } finally {
             setIsUploading(false);
         }
