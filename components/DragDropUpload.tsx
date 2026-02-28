@@ -190,7 +190,7 @@ export default function DragDropUpload() {
                                         >
                                             <motion.div
                                                 animate={{ y: [0, -10, 0] }}
-                                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                transition={{ duration: 2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] }}
                                                 className="mb-6 relative"
                                             >
                                                 <div className={`absolute inset-0 blur-2xl rounded-full transition-colors duration-500 ${isDragActive ? 'bg-primary/40' : 'bg-secondary/20'}`} />

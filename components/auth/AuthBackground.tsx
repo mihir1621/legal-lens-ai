@@ -45,7 +45,7 @@ function FloatingElements() {
                     transition={{
                         duration: el.duration,
                         repeat: Infinity,
-                        ease: "easeInOut"
+                        ease: [0.42, 0, 0.58, 1]
                     }}
                     style={{
                         width: el.width,
@@ -84,7 +84,7 @@ export default function AuthBackground({ children }: { children: React.ReactNode
                         style={{ top: word.top, left: word.left, right: word.right, bottom: word.bottom }}
                         initial={{ opacity: 0 }}
                         animate={{ y: [0, -15, 0], opacity: [0.5, 0.8, 0.5] }}
-                        transition={{ duration: 6 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+                        transition={{ duration: 6 + i, repeat: Infinity, ease: [0.42, 0, 0.58, 1], delay: i * 0.5 }}
                     >
                         {word.text}
                     </motion.div>
@@ -107,7 +107,7 @@ export default function AuthBackground({ children }: { children: React.ReactNode
                         "radial-gradient(circle at 0% 0%, #8b5cf6 0%, transparent 50%)",
                     ]
                 }}
-                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" as const }}
             />
 
             {/* Floating Elements & Keywords */}
@@ -126,7 +126,7 @@ export default function AuthBackground({ children }: { children: React.ReactNode
                     transition={{
                         duration: 45,
                         repeat: Infinity,
-                        ease: "linear",
+                        ease: "linear" as const,
                         times: [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1]
                     }}
                 >

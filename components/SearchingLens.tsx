@@ -10,7 +10,7 @@ export default function SearchingLens({ className = "mb-6" }: { className?: stri
                 <motion.div
                     className="absolute inset-0 border-2 border-primary/20 rounded-full"
                     animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: [0, 0, 0.2, 1] }}
                 />
 
                 {/* The Magnifying Glass Container - Floats around */}
@@ -24,7 +24,7 @@ export default function SearchingLens({ className = "mb-6" }: { className?: stri
                     transition={{
                         duration: 8,
                         repeat: Infinity,
-                        ease: "easeInOut",
+                        ease: [0.42, 0, 0.58, 1],
                         times: [0, 0.25, 0.5, 0.75, 1]
                     }}
                 >
@@ -37,7 +37,7 @@ export default function SearchingLens({ className = "mb-6" }: { className?: stri
                         <motion.div
                             className="absolute left-0 right-0 h-1 bg-primary/80 shadow-[0_0_8px_var(--primary)]"
                             animate={{ top: ['0%', '100%', '0%'] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" as const }}
                         />
 
                         {/* Grid Pattern Inside (to look like scanning data) */}
@@ -58,7 +58,7 @@ export default function SearchingLens({ className = "mb-6" }: { className?: stri
                     transition={{
                         duration: 8,
                         repeat: Infinity,
-                        ease: "easeInOut",
+                        ease: [0.42, 0, 0.58, 1],
                         times: [0, 0.25, 0.5, 0.75, 1]
                     }}
                 />

@@ -17,8 +17,8 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
       viewport={{ once: true }}
       transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
       className={`relative rounded-2xl border overflow-hidden transition-all duration-500 ${open
-          ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/5'
-          : 'border-border bg-card hover:border-primary/20 hover:shadow-sm'
+        ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/5'
+        : 'border-border bg-card hover:border-primary/20 hover:shadow-sm'
         }`}
     >
       {/* Left accent bar */}
@@ -30,8 +30,8 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
         className="w-full flex items-center gap-4 p-5 pl-6 text-left cursor-pointer group"
       >
         <span className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all duration-300 ${open
-            ? 'bg-primary text-white scale-110'
-            : 'bg-primary/10 text-primary group-hover:bg-primary/20'
+          ? 'bg-primary text-white scale-110'
+          : 'bg-primary/10 text-primary group-hover:bg-primary/20'
           }`}>
           {String(index + 1).padStart(2, '0')}
         </span>
@@ -55,7 +55,7 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.35, ease: [0, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
             <p className="px-5 pl-[4.5rem] pb-5 text-sm text-muted-foreground leading-relaxed">
@@ -143,7 +143,7 @@ export default function Home() {
           className="container mx-auto max-w-4xl space-y-6"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: [0, 0, 0.2, 1] }}
         >
           <motion.div
             className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-bold text-white backdrop-blur-sm"

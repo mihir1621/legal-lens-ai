@@ -28,7 +28,7 @@ export default function AboutPage() {
                     className="container mx-auto max-w-4xl space-y-6"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    transition={{ duration: 0.8, ease: [0, 0, 0.2, 1] }}
                 >
                     <motion.div
                         className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary uppercase tracking-widest mb-4"
