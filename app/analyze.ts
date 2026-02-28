@@ -96,8 +96,13 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                     console.log("[Analyzer] Success using Direct Gemini");
                     return JSON.parse(raw);
                 }
+            } else {
+                const errText = await res.text();
+                console.error(`[Analyzer] Direct Gemini API Error (${res.status}):`, errText);
             }
-        } catch (e) { console.warn("[Analyzer] Direct Gemini failed:", e); }
+        } catch (e: any) {
+            console.warn("[Analyzer] Direct Gemini fetch failed or timed out:", e.message);
+        }
     }
 
     // 2. TRY OPENROUTER — RACE TOP 3 MODELS IN PARALLEL
@@ -120,7 +125,7 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                     headers: {
                         "Authorization": `Bearer ${orKey}`,
                         "Content-Type": "application/json",
-                        "HTTP-Referer": "http://localhost:3000",
+                        "HTTP-Referer": "https://legallens-ai.vercel.app",
                         "X-Title": "LegalLens AI"
                     },
                     body: JSON.stringify({
@@ -143,8 +148,13 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                             return parsed;
                         }
                     }
+                } else {
+                    const errText = await res.text();
+                    console.warn(`[Analyzer] OpenRouter Model ${modelId} failed (${res.status}):`, errText);
                 }
-            } catch { /* model failed, others may still win */ }
+            } catch (e: any) {
+                console.warn(`[Analyzer] OpenRouter Model ${modelId} error:`, e.message);
+            }
             return null;
         };
 
