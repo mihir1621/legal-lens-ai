@@ -85,28 +85,41 @@ export default function DragDropUpload() {
             // 2. Save to Firestore
             let user = auth.currentUser;
 
-            // Re-check auth and force token refresh if session is old
+            // Re-check Firestore configuration
+            const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+            if (!projectId) {
+                console.error("CRITICAL: NEXT_PUBLIC_FIREBASE_PROJECT_ID is missing!");
+                alert("Configuration Error: Firebase Project ID is not set in environment variables.");
+                return;
+            }
+
+            // Re-check auth
             if (!user) {
                 console.log("Waiting for auth to re-initialize...");
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 user = auth.currentUser;
             }
 
             if (user) {
-                console.log("Refreshing token and saving for user:", user.uid);
-                await user.getIdToken(true); // Force refresh token to ensure it's not expired
+                console.log(`Attempting save to ${projectId} for user ${user.uid}`);
+                try {
+                    await user.getIdToken(true);
 
-                // Store the full analysis result
-                const docRef = await addDoc(collection(db, "documents"), {
-                    userId: user.uid,
-                    title: file ? file.name : "Text Snippet",
-                    originalText: textToAnalyze.substring(0, 5000),
-                    analysis: analysisResult,
-                    createdAt: serverTimestamp(),
-                    isAnalysis: true
-                });
-                console.log("Document saved with ID:", docRef.id);
-                router.push(`/document/${docRef.id}`);
+                    const docRef = await addDoc(collection(db, "documents"), {
+                        userId: user.uid,
+                        title: file ? file.name : "Text Snippet",
+                        originalText: textToAnalyze.substring(0, 5000),
+                        analysis: analysisResult,
+                        createdAt: serverTimestamp(),
+                        isAnalysis: true
+                    });
+                    console.log("Document saved with ID:", docRef.id);
+                    router.push(`/document/${docRef.id}`);
+                } catch (dbErr: any) {
+                    console.error("Firestore Database Error Details:", dbErr);
+                    alert(`Firestore Error [${dbErr.code}]: ${dbErr.message}\n\nCheck if your Rules allow writes to the 'documents' collection.`);
+                    return;
+                }
             } else {
                 console.warn("User session lost during analysis, saving to local storage");
                 localStorage.setItem("temp_analysis", JSON.stringify(analysisResult));
@@ -114,12 +127,8 @@ export default function DragDropUpload() {
             }
 
         } catch (err: any) {
-            console.error("Analysis/Save Error:", err);
-            if (err?.code === 'permission-denied') {
-                alert("Firestore Permission Error: Check your Firebase Security Rules and ensure your account is verified.");
-            } else {
-                alert("Processing Failed: " + (err instanceof Error ? err.message : "Unknown error"));
-            }
+            console.error("General Analysis/Save Error:", err);
+            alert("Processing Failed: " + (err instanceof Error ? err.message : "Unknown error"));
         } finally {
             setIsUploading(false);
         }
