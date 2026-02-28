@@ -85,6 +85,7 @@ export default function DragDropUpload() {
             // 2. Save to Firestore
             const user = auth.currentUser;
             if (user) {
+                console.log("Saving to Firestore for user:", user.uid);
                 // Store the full analysis result
                 const docRef = await addDoc(collection(db, "documents"), {
                     userId: user.uid,
@@ -94,8 +95,7 @@ export default function DragDropUpload() {
                     createdAt: serverTimestamp(),
                     isAnalysis: true
                 });
-
-                // 3. Navigate to result
+                console.log("Document saved with ID:", docRef.id);
                 router.push(`/document/${docRef.id}`);
             } else {
                 console.warn("User not logged in, saving to local storage");
