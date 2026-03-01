@@ -114,20 +114,28 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
     }
 
     try {
+        if (!googleKey && !orKey) {
+            throw new Error("No API keys configured in Vercel. Add GOOGLE_API_KEY or NEXT_PUBLIC_APIKEY to environment variables.");
+        }
         const result = await Promise.any(providers);
         return result;
-    } catch (e) {
+    } catch (e: any) {
         console.error("[Analyzer] All provider attempts failed or timed out:", e);
+
+        let errorHint = "The AI was too slow for Vercel's 10s limit.";
+        if (e.message?.includes("API keys")) errorHint = e.message;
+        else if (!googleKey || !orKey) errorHint = `Partial config detected: Google=${googleKey ? 'YES' : 'NO'}, OR=${orKey ? 'YES' : 'NO'}. Please check Vercel Env Vars.`;
 
         // ULTIMATE FALLBACK: Return structured preview if all else fails
         return {
-            summary_simple: `[FAST PREVIEW]\n• Analysis timed out on Vercel.\n• Document detected: ${isVisionMode ? 'Image/Scan' : 'Text'}.\n• Content length: ${cleanedText.length} characters.`,
+            summary_simple: `[ANALYSIS FAILED]\n• Error: ${e.errors?.[0]?.message || e.message || 'Unknown error'}\n• Mode: ${isVisionMode ? 'Vision/Scan' : 'Text'}\n• Length: ${cleanedText.length} chars.`,
             what_it_means: [
-                "The legal AI engine is busy. Please try a smaller snippet of text.",
-                "Check your API keys in Vercel settings if this keeps happening."
+                errorHint,
+                "1. If this is an image, ensure it is clear and under 4MB.",
+                "2. Check Vercel Logs for 'Direct Gemini API Error' or 'OpenRouter Error'."
             ],
-            key_clauses: [{ title: "Timeout", explanation: "The AI was too slow for Vercel's 10s limit.", risk: "High" }],
-            red_flags: [{ reason: "Cloud rate limit or timeout.", severity: "Medium" }],
+            key_clauses: [{ title: "Analysis Interrupted", explanation: "The AI providers failed to return a valid response.", risk: "Unknown" }],
+            red_flags: [{ reason: "Service unavailable or Keys missing.", severity: "High" }],
             documents_required: []
         };
     }
