@@ -1,12 +1,12 @@
 'use server';
 
 /**
- * LEGAL ANALYSIS ENGINE (Version 13.0 - Vercel Optimized)
+ * LEGAL ANALYSIS ENGINE (Version 13.1 - Vercel Optimized)
  * 
  * Parallel Racing Strategy to beat Vercel's 10s timeout limit.
  */
 
-interface LegalAnalysis {
+export interface LegalAnalysis {
     summary_simple: string;
     what_it_means: string[];
     key_clauses: Array<{ title: string; explanation: string; risk: string }>;
@@ -31,10 +31,7 @@ STRICT JSON OUTPUT ONLY (NO CHAT):
     "documents_required": [{"name": "...", "purpose": "...", "how_to_obtain": ["..."]}]
 }`;
 
-// Vercel Limit: Hobby = 10s, Pro = 60s
-export const maxDuration = 60;
-
-export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
+export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => {
     const isVisionMode = text.startsWith('IMAGE_DATA:');
     let base64Data = '';
     let mimeType = '';
@@ -148,4 +145,4 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
             documents_required: []
         };
     }
-}
+};

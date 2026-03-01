@@ -8,7 +8,7 @@ import { DocumentSkeleton } from '@/components/DocumentSkeleton';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { extractTextFromFile } from '@/app/actions';
-import { analyzeLegalText } from '@/app/analyze';
+import { analyzeLegalText } from '@/lib/analyze';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
