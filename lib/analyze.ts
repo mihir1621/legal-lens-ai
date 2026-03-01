@@ -14,22 +14,30 @@ export interface LegalAnalysis {
     documents_required: Array<{ name: string; purpose: string; how_to_obtain: string[] }>;
 }
 
-const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist. Provide a "Full Clarification" of the document.
-ALWAYS respond in SIMPLE, SHORT, and CLEAR English. Avoid complex legalese.
+const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
+Analyze the document provided and return a high-clarity strategic breakdown.
 
-STRICT RULES FOR CONTENT:
-1. "summary_simple": Point-wise description (Bullet points •). New line for each. Limit 500 chars.
-2. "key_clauses": Short sentences only.
-3. "red_flags": Max 10 words per reason.
-
-STRICT JSON OUTPUT ONLY (NO CHAT):
+STRICT JSON OUTPUT FORMAT:
 {
-    "summary_simple": "...",
-    "what_it_means": ["..."],
-    "key_clauses": [{"title": "...", "explanation": "...", "risk": "..."}],
-    "red_flags": [{"reason": "...", "severity": "..."}],
-    "documents_required": [{"name": "...", "purpose": "...", "how_to_obtain": ["..."]}]
-}`;
+    "summary_simple": "Executive summary in bullet points (•). Focus on who, what, when.",
+    "what_it_means": ["Strategic implications for the user", "Financial impact", "Immediate next steps"],
+    "key_clauses": [
+        {"title": "Clause Name", "explanation": "Simple breakdown", "risk": "High | Medium | Low"}
+    ],
+    "red_flags": [
+        {"reason": "Specific threat or missing protection", "severity": "High | Medium | Low"}
+    ],
+    "documents_required": [
+        {"name": "Required Doc", "purpose": "Why this is needed", "how_to_obtain": ["Step-by-step guidance"]}
+    ]
+}
+
+STRICT ANALYTICAL RULES:
+1. Tone: Professional, objective, and protective of the user.
+2. Summary: Use exactly 1 short sentence per bullet point.
+3. Clarity: No "legalese" – explain everything as if to a business owner.
+4. Risk: Be aggressive in identifying "unfair" clauses or missing termination rights.
+5. If some data is missing from a scan, state 'Inferred' or 'Insufficient Data' in the field.`;
 
 export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => {
     const isVisionMode = text.startsWith('IMAGE_DATA:');
@@ -56,41 +64,43 @@ export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => 
     // Use first 5k chars for speed
     const userPrompt = `Analyze this legal document. ${isVisionMode ? "READ THE IMAGE VISUALLY." : `DOC TEXT: ${cleanedText.substring(0, 5000)}`}\n\nReturn JSON.`;
 
-    // --- STRATEGY: PARALLEL RACE ---
-    const providers: Promise<LegalAnalysis>[] = [];
+    // --- STRATEGY: STAGGERED RACING (Saves API Calls) ---
+    // We start Gemini immediately. We only start OpenRouter if Gemini is slow (>3s).
 
-    // 1. Direct Gemini Provider
-    if (googleKey) {
-        providers.push((async () => {
-            console.log("[Analyzer] Starting Gemini...");
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: isVisionMode
-                        ? [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }, { inlineData: { mimeType, data: base64Data } }] }]
-                        : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 1500 }
-                }),
-                signal: AbortSignal.timeout(9000)
-            });
-            if (!res.ok) {
-                const err = await res.text();
-                console.error(`[Analyzer] Gemini HTTP Error ${res.status}:`, err);
-                throw new Error(`Gemini Error ${res.status}`);
-            }
-            const data = await res.json();
-            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!raw) throw new Error("Empty Gemini Response");
-            console.log("[Analyzer] Gemini Won!");
-            return JSON.parse(raw);
-        })());
-    }
+    let winnerFound = false;
 
-    // 2. OpenRouter Provider
-    if (orKey) {
-        providers.push((async () => {
-            console.log("[Analyzer] Starting OpenRouter (Gemma-3)...");
+    const startGemini = async (): Promise<LegalAnalysis> => {
+        if (!googleKey) throw new Error("No Google Key");
+        console.log("[Analyzer] T+0ms: Starting Gemini...");
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: isVisionMode
+                    ? [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }, { inlineData: { mimeType, data: base64Data } }] }]
+                    : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }],
+                generationConfig: { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 1500 }
+            }),
+            signal: AbortSignal.timeout(9500)
+        });
+        if (!res.ok) throw new Error(`Gemini Error ${res.status}`);
+        const data = await res.json();
+        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!raw) throw new Error("Empty Gemini Response");
+        winnerFound = true;
+        console.log("[Analyzer] Gemini Won (Saved Fallback Costs)");
+        return JSON.parse(raw);
+    };
+
+    const startORFallback = async (): Promise<LegalAnalysis> => {
+        // Wait 3 seconds to see if Gemini finishes first (prevents redundant calls)
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        if (winnerFound) return new Promise(() => { }); // Abort if Gemini already won
+
+        console.log("[Analyzer] T+3000ms: Gemini slow/failed, starting OpenRouter race...");
+        const orModels = ["google/gemma-3-27b-it:free", "qwen/qwen-2.5-72b-instruct:free"];
+
+        const orRace = orModels.map(model => (async () => {
             const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
                 headers: {
@@ -100,32 +110,31 @@ export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => 
                     "X-Title": "LegalLens AI"
                 },
                 body: JSON.stringify({
-                    model: "google/gemma-3-27b-it:free",
+                    model: model,
                     messages: [{ role: "system", content: ANALYSIS_PROMPT_SYSTEM }, { role: "user", content: userPrompt }],
                     temperature: 0.1,
                     max_tokens: 1500
                 }),
-                signal: AbortSignal.timeout(9000)
+                signal: AbortSignal.timeout(6000) // Shorter timeout for fallback
             });
-            if (!res.ok) {
-                const err = await res.text();
-                console.error(`[Analyzer] OpenRouter HTTP Error ${res.status}:`, err);
-                throw new Error(`OpenRouter Error ${res.status}`);
-            }
+            if (!res.ok) throw new Error(`OR ${model} Fail`);
             const data = await res.json();
             const raw = data.choices?.[0]?.message?.content;
-            if (!raw) throw new Error("Empty OR Response");
+            if (!raw) throw new Error("Empty OR");
             const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || raw;
-            console.log("[Analyzer] OpenRouter Won!");
+            winnerFound = true;
+            console.log(`[Analyzer] ${model} Won Fallback Race`);
             return JSON.parse(jsonStr);
         })());
-    }
+
+        return await Promise.any(orRace);
+    };
 
     try {
-        if (providers.length === 0) {
-            throw new Error("No API keys found in Vercel. Add GOOGLE_API_KEY or NEXT_PUBLIC_APIKEY.");
-        }
-        const result = await Promise.any(providers);
+        if (!googleKey && !orKey) throw new Error("No Keys");
+
+        // Race the primary attempt vs the staggered fallback
+        const result = await Promise.any([startGemini(), startORFallback()]);
         return result;
     } catch (e: any) {
         console.error("[Analyzer] All routes failed:", e);
