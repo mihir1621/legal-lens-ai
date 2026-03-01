@@ -11,6 +11,7 @@ import { extractTextFromFile } from '@/app/actions';
 import { analyzeLegalText } from '@/lib/analyze';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { LegalAnalysis } from '@/lib/types';
 
 type ProcessingStep = 'idle' | 'extracting' | 'analyzing' | 'finalizing';
 
@@ -83,7 +84,8 @@ export default function DragDropUpload() {
             }
 
             setStep('analyzing');
-            const analysisResult: any = await analyzeLegalText(textToAnalyze);
+            let user = auth.currentUser;
+            const analysisResult = await analyzeLegalText(textToAnalyze, user?.uid);
 
             if (analysisResult.error) {
                 alert(`Analysis Failed: ${analysisResult.error}`);
@@ -92,7 +94,6 @@ export default function DragDropUpload() {
             }
 
             setStep('finalizing');
-            let user = auth.currentUser;
             const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
             if (user && projectId) {
@@ -102,6 +103,7 @@ export default function DragDropUpload() {
                         userId: user.uid,
                         title: (fileToUse as File)?.name || "Text Snippet",
                         originalText: textToAnalyze.substring(0, 5000),
+                        fingerprint: textToAnalyze.substring(0, 500), // Used for duplicate check
                         analysis: analysisResult,
                         createdAt: serverTimestamp(),
                         isAnalysis: true

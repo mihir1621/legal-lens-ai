@@ -1,18 +1,12 @@
 'use server';
 
-/**
- * LEGAL ANALYSIS ENGINE (Version 13.1 - Vercel Optimized)
- * 
- * Parallel Racing Strategy to beat Vercel's 10s timeout limit.
- */
+import { db } from './firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { LegalAnalysis } from './types';
 
-export interface LegalAnalysis {
-    summary_simple: string;
-    what_it_means: string[];
-    key_clauses: Array<{ title: string; explanation: string; risk: string }>;
-    red_flags: Array<{ reason: string; severity: string }>;
-    documents_required: Array<{ name: string; purpose: string; how_to_obtain: string[] }>;
-}
+/**
+ * LEGAL ANALYSIS ENGINE (Version 14.1 - Cache Optimized)
+ */
 
 const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
 Analyze the document provided and return a high-clarity strategic breakdown.
@@ -39,39 +33,62 @@ STRICT ANALYTICAL RULES:
 4. Risk: Be aggressive in identifying "unfair" clauses or missing termination rights.
 5. If some data is missing from a scan, state 'Inferred' or 'Insufficient Data' in the field.`;
 
-export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => {
+// Vercel Limit: Hobby = 10s, Pro = 60s
+export async function analyzeLegalText(text: string, userId?: string): Promise<LegalAnalysis> {
     const isVisionMode = text.startsWith('IMAGE_DATA:');
+    let cleanedText = text.trim();
+
+    // 1. --- CHECK CACHE (Saves API Calls) ---
+    if (userId && !isVisionMode && cleanedText.length > 100) {
+        try {
+            console.log(`[Analyzer] Checking cache for user: ${userId}`);
+            const snippet = cleanedText.substring(0, 500);
+            const q = query(
+                collection(db, "documents"),
+                where("userId", "==", userId),
+                where("isAnalysis", "==", true),
+                where("fingerprint", "==", snippet),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                console.log("[Analyzer] CACHE HIT! Serving previous analysis.");
+                return querySnapshot.docs[0].data().analysis;
+            }
+        } catch (cacheErr) {
+            console.warn("[Analyzer] Cache check skipped:", cacheErr);
+        }
+    }
+
     let base64Data = '';
     let mimeType = '';
-    let cleanedText = text;
 
     if (isVisionMode) {
         const parts = text.split(';base64,');
         mimeType = parts[0].replace('IMAGE_DATA:', '');
         base64Data = parts[1];
     } else {
-        cleanedText = text.trim();
         if (cleanedText.length === 0) {
             return { summary_simple: "Empty document.", what_it_means: [], key_clauses: [], red_flags: [], documents_required: [] };
         }
     }
 
     const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
-    const orKey = (process.env.NEXT_PUBLIC_APIKEY || "").replace(/["']/g, "").trim();
+    const orKey = (
+        process.env['NEXT_PUBLIC_OPENROUTER_API_KEY'] ||
+        process.env.NEXT_PUBLIC_API_KEY ||
+        process.env.NEXT_PUBLIC_APIKEY ||
+        ""
+    ).replace(/["']/g, "").trim();
 
-    console.log(`[Analyzer] Detected Keys - Google: ${googleKey ? 'YES' : 'NO'}, OR: ${orKey ? 'YES' : 'NO'}`);
+    console.log(`[Analyzer] Service Initiation - Google: ${googleKey ? 'YES' : 'NO'}, OR: ${orKey ? 'YES' : 'NO'}`);
 
-    // Use first 5k chars for speed
     const userPrompt = `Analyze this legal document. ${isVisionMode ? "READ THE IMAGE VISUALLY." : `DOC TEXT: ${cleanedText.substring(0, 5000)}`}\n\nReturn JSON.`;
-
-    // --- STRATEGY: STAGGERED RACING (Saves API Calls) ---
-    // We start Gemini immediately. We only start OpenRouter if Gemini is slow (>3s).
 
     let winnerFound = false;
 
     const startGemini = async (): Promise<LegalAnalysis> => {
-        if (!googleKey) throw new Error("No Google Key");
-        console.log("[Analyzer] T+0ms: Starting Gemini...");
+        if (!googleKey) throw new Error("Missing Google Key");
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -83,21 +100,19 @@ export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => 
             }),
             signal: AbortSignal.timeout(9500)
         });
-        if (!res.ok) throw new Error(`Gemini Error ${res.status}`);
+        if (!res.ok) throw new Error(`Gemini status ${res.status}`);
         const data = await res.json();
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!raw) throw new Error("Empty Gemini Response");
         winnerFound = true;
-        console.log("[Analyzer] Gemini Won (Saved Fallback Costs)");
         return JSON.parse(raw);
     };
 
     const startORFallback = async (): Promise<LegalAnalysis> => {
-        // Wait 3 seconds to see if Gemini finishes first (prevents redundant calls)
         await new Promise(resolve => setTimeout(resolve, 3000));
-        if (winnerFound) return new Promise(() => { }); // Abort if Gemini already won
+        if (winnerFound || !orKey) return new Promise(() => { });
 
-        console.log("[Analyzer] T+3000ms: Gemini slow/failed, starting OpenRouter race...");
+        console.log("[Analyzer] Starting OpenRouter (Fallback Race)...");
         const orModels = ["google/gemma-3-27b-it:free", "qwen/qwen-2.5-72b-instruct:free"];
 
         const orRace = orModels.map(model => (async () => {
@@ -115,15 +130,14 @@ export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => 
                     temperature: 0.1,
                     max_tokens: 1500
                 }),
-                signal: AbortSignal.timeout(6000) // Shorter timeout for fallback
+                signal: AbortSignal.timeout(6000)
             });
-            if (!res.ok) throw new Error(`OR ${model} Fail`);
+            if (!res.ok) throw new Error(`OR ${model} Error`);
             const data = await res.json();
             const raw = data.choices?.[0]?.message?.content;
-            if (!raw) throw new Error("Empty OR");
+            if (!raw) throw new Error(`Empty ${model} Response`);
             const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || raw;
             winnerFound = true;
-            console.log(`[Analyzer] ${model} Won Fallback Race`);
             return JSON.parse(jsonStr);
         })());
 
@@ -131,27 +145,17 @@ export const analyzeLegalText = async (text: string): Promise<LegalAnalysis> => 
     };
 
     try {
-        if (!googleKey && !orKey) throw new Error("No Keys");
-
-        // Race the primary attempt vs the staggered fallback
+        if (!googleKey && !orKey) throw new Error("No functional API keys configured.");
         const result = await Promise.any([startGemini(), startORFallback()]);
         return result;
     } catch (e: any) {
         console.error("[Analyzer] All routes failed:", e);
-
-        let detailedError = e.message || "Unknown Failure";
-        if (e.errors) detailedError = e.errors.map((err: any) => err.message).join(", ");
-
         return {
-            summary_simple: `[ANALYSIS FAILED]\n• Error: ${detailedError}\n• Keys Present: Google(${googleKey ? 'Y' : 'N'}), OR(${orKey ? 'Y' : 'N'})`,
-            what_it_means: [
-                "The AI providers are currently unreachable from your Vercel deployment.",
-                "1. Check Vercel 'Logs' tab for 'HTTP Error 401' (wrong key) or '403' (restricted key).",
-                "2. Ensure GOOGLE_API_KEY is not restricted by IP in Google Cloud Console."
-            ],
-            key_clauses: [{ title: "Analysis Interrupted", explanation: "The server could not communicate with AI providers.", risk: "High" }],
-            red_flags: [{ reason: "Service unavailable or Keys missing.", severity: "High" }],
+            summary_simple: `[ANALYSIS BUSY]\n• Error: API Rate Limit reached.\n• Cloud Provider: GEMINI/OPENROUTER.`,
+            what_it_means: ["The AI services are at capacity. Please refresh in 30 seconds."],
+            key_clauses: [{ title: "Service Busy", explanation: "AI could not reach a decision within the time limit.", risk: "High" }],
+            red_flags: [{ reason: "Cloud rate limit reached.", severity: "Medium" }],
             documents_required: []
         };
     }
-};
+}
