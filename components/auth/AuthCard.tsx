@@ -55,7 +55,11 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
                 }
             } catch (err: any) {
                 console.error("[Auth] Redirect Error:", err);
-                setError(err.message);
+                if (err.code === 'auth/unauthorized-domain') {
+                    setError(`This domain (${window.location.hostname}) is not authorized in Firebase Console. Add it to: Authentication -> Settings -> Authorized Domains.`);
+                } else {
+                    setError(err.message);
+                }
             }
         };
         handleRedirect();
@@ -150,7 +154,12 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
                 }
             }
         } catch (err: any) {
-            setError(err.message);
+            console.error("[Auth] Google Login Error:", err);
+            if (err.code === 'auth/unauthorized-domain') {
+                setError(`Domain (${window.location.hostname}) is not authorized in Firebase Console -> Authentication -> Settings.`);
+            } else {
+                setError(err.message);
+            }
             setLoading(false);
         }
         // Note: We don't set loading(false) here if we're redirecting
