@@ -11,6 +11,8 @@ import {
     createUserWithEmailAndPassword,
     updateProfile,
     signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider,
     RecaptchaVerifier,
     signInWithPhoneNumber,
@@ -44,6 +46,20 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
 
     // Cleanup reCAPTCHA on unmount
     useEffect(() => {
+        // Handle redirect result for Google Login
+        const handleRedirect = async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    router.push('/');
+                }
+            } catch (err: any) {
+                console.error("[Auth] Redirect Error:", err);
+                setError(err.message);
+            }
+        };
+        handleRedirect();
+
         return () => {
             if (window.recaptchaVerifier) {
                 try {
@@ -52,7 +68,7 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
                 } catch (e) { }
             }
         };
-    }, []);
+    }, [router]);
 
     const getEnterpriseToken = async (action: string): Promise<string | null> => {
         return new Promise((resolve) => {
@@ -121,13 +137,23 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
         try {
             await runSafetyCheck('GOOGLE_LOGIN');
             const provider = new GoogleAuthProvider();
-            await signInWithPopup(auth, provider);
-            router.push('/');
+            try {
+                await signInWithPopup(auth, provider);
+                router.push('/');
+            } catch (popupErr: any) {
+                // FALLBACK: If popup is blocked, use redirect
+                if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
+                    console.log("[Auth] Popup blocked, falling back to redirect...");
+                    await signInWithRedirect(auth, provider);
+                } else {
+                    throw popupErr;
+                }
+            }
         } catch (err: any) {
             setError(err.message);
-        } finally {
             setLoading(false);
         }
+        // Note: We don't set loading(false) here if we're redirecting
     };
 
     const setupRecaptcha = () => {

@@ -92,6 +92,7 @@ export async function analyzeLegalText(text: string): Promise<LegalAnalysis> {
                 headers: {
                     "Authorization": `Bearer ${orKey}`,
                     "Content-Type": "application/json",
+                    "HTTP-Referer": "https://legal-lens-ai-three.vercel.app",
                     "X-Title": "LegalLens AI"
                 },
                 body: JSON.stringify({
