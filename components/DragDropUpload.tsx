@@ -111,7 +111,13 @@ export default function DragDropUpload() {
 
         } catch (err: any) {
             console.error("General Error:", err);
-            alert("Processing Failed: " + (err.message || "Unknown error"));
+            let userMsg = err.message || "Unknown error";
+            if (userMsg.includes("permission-denied")) {
+                userMsg = "Firestore Permission Denied: Check your Security Rules.";
+            } else if (userMsg.includes("unauthenticated")) {
+                userMsg = "Session Expired: Please log in again.";
+            }
+            alert(`Processing Failed: ${userMsg}\n\nCheck Vercel logs for detail.`);
         } finally {
             setIsUploading(false);
         }
