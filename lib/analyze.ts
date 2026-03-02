@@ -92,7 +92,6 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
         }
     }
 
-    // 2. --- SETUP API KEYS (Broad Lookup for Vercel/Local Resiliency) ---
     const googleKey = (
         process.env.GOOGLE_API_KEY ||
         process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
@@ -101,15 +100,15 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
         ""
     ).replace(/["']/g, "").trim();
 
-    const orKey = (
-        process.env.OPENROUTER_API_KEY ||
-        process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
-        process.env.NEXT_PUBLIC_APIKEY ||
-        process.env.OPENROUTER_KEY ||
-        ""
-    ).replace(/["']/g, "").trim();
+    // Collect ALL available OpenRouter keys to expand quota
+    const orKeys = [
+        process.env.OPENROUTER_API_KEY,
+        process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+        process.env.NEXT_PUBLIC_APIKEY,
+        process.env.OPENROUTER_KEY
+    ].map(k => (k || "").replace(/["']/g, "").trim()).filter(k => k.length > 10);
 
-    if (!googleKey && !orKey) throw new Error("NO_FUNCTIONAL_API_KEYS");
+    if (!googleKey && orKeys.length === 0) throw new Error("NO_FUNCTIONAL_API_KEYS");
 
     const userPrompt = `Analyze this legal document. ${isVisionMode ? "READ THE IMAGE VISUALLY." : `DOC TEXT: ${cleanedText.substring(0, 5000)}`}\n\nReturn JSON only.`;
     let winnerFound = false;
@@ -166,20 +165,14 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
         }
     };
 
-    // 4. --- PROVIDER 2: OPENROUTER (Ultra-Resilient Fallback) ---
+    // 4. --- PROVIDER 2: OPENROUTER (Ultra-Resilient Fallback Cluster) ---
     const startORReasoning = async (): Promise<LegalAnalysis> => {
-        // Longer stagger for fallbacks to avoid key saturation
-        const stagger = 4500 + (Math.random() * 1000);
+        // Longer stagger for fallbacks to avoid key saturation - 6s
+        const stagger = 6000 + (Math.random() * 1500);
         await new Promise(resolve => setTimeout(resolve, stagger));
-        if (winnerFound || !orKey) throw new Error("OR_SKIPPED");
+        if (winnerFound || orKeys.length === 0) throw new Error("OR_SKIPPED");
 
-        console.log("[Analyzer] Primary latency high. Activating OR fallback cluster...");
-
-        const client = new OpenAI({
-            baseURL: 'https://openrouter.ai/api/v1',
-            apiKey: orKey,
-            defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
-        });
+        console.log(`[Analyzer] Primary latency high. Activating OR fallback cluster with ${orKeys.length} keys...`);
 
         // Confirmed stable free endpoints for OpenRouter
         const models = [
@@ -187,32 +180,45 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
             'meta-llama/llama-3.3-70b-instruct:free',
             'qwen/qwen-2.5-72b-instruct:free',
             'mistralai/mistral-7b-instruct:free',
+            'google/gemini-2.0-flash-exp:free',
             'google/gemma-3-27b-it:free'
         ];
 
-        for (const model of models) {
+        // TRY EACH KEY IF AVAILABLE
+        for (const currentKey of orKeys) {
             if (winnerFound) break;
-            try {
-                console.log(`[Analyzer] Attempting ${model}...`);
-                const completion = await client.chat.completions.create({
-                    model: model,
-                    messages: [
-                        { role: "system", content: ANALYSIS_PROMPT_SYSTEM },
-                        { role: "user", content: userPrompt }
-                    ],
-                    response_format: { type: "json_object" }
-                }, { timeout: 25000 });
 
-                const raw = completion.choices?.[0]?.message?.content;
-                if (!raw) continue;
+            console.log(`[Analyzer] Switching to OR Key ${currentKey.substring(0, 10)}...`);
+            const client = new OpenAI({
+                apiKey: currentKey,
+                baseURL: 'https://openrouter.ai/api/v1',
+                defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
+            });
 
-                const parsed = JSON.parse(raw);
-                winnerFound = true;
-                console.log(`[Analyzer] 🏆 ${model} Successfully Analyzed.`);
-                return sanitizeAnalysis(parsed);
-            } catch (err: any) {
-                console.warn(`[Analyzer] ❌ ${model} failed:`, err.message);
-                if (err.status === 429) await new Promise(r => setTimeout(r, 1000));
+            for (const model of models) {
+                if (winnerFound) break;
+                try {
+                    console.log(`[Analyzer] Attempting ${model}...`);
+                    const completion = await client.chat.completions.create({
+                        model: model,
+                        messages: [
+                            { role: "system", content: ANALYSIS_PROMPT_SYSTEM },
+                            { role: "user", content: userPrompt }
+                        ],
+                        response_format: { type: "json_object" }
+                    }, { timeout: 30000 });
+
+                    const raw = completion.choices?.[0]?.message?.content;
+                    if (!raw) continue;
+
+                    const parsed = JSON.parse(raw);
+                    winnerFound = true;
+                    console.log(`[Analyzer] 🏆 ${model} Successfully Analyzed (using key ${currentKey.substring(0, 8)}).`);
+                    return sanitizeAnalysis(parsed);
+                } catch (err: any) {
+                    console.warn(`[Analyzer] ❌ ${model} failed with key ${currentKey.substring(0, 8)}:`, err.message);
+                    if (err.status === 429) await new Promise(r => setTimeout(r, 1500));
+                }
             }
         }
         throw new Error("ALL_FALLBACKS_FAILED");

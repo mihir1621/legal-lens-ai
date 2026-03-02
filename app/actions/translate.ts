@@ -54,22 +54,24 @@ export async function translateText(text: string, targetLang: string = "hi") {
                     translationCache[cacheKey] = translated;
                     return translated;
                 }
+            } else if (res.status === 429) {
+                console.warn("Translation Gemini is Rate Limited (429). Waiting 1s...");
+                await new Promise(r => setTimeout(r, 1000));
             }
         } catch (e) {
-            console.warn("Gemini Direct Translation failed, trying OpenRouter...");
+            console.warn("Gemini Direct Translation failed...");
         }
     }
 
     // --- PRIORITY 2: OPENROUTER (Multi-language via Gemini Flash) ---
-    const openRouterKey = (
-        process.env.OPENROUTER_API_KEY ||
-        process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
-        process.env.NEXT_PUBLIC_APIKEY ||
-        process.env.OPENROUTER_KEY ||
-        ""
-    ).replace(/["']/g, "").trim();
+    const orKeys = [
+        process.env.OPENROUTER_API_KEY,
+        process.env.NEXT_PUBLIC_OPENROUTER_API_KEY,
+        process.env.NEXT_PUBLIC_APIKEY,
+        process.env.OPENROUTER_KEY
+    ].map(k => (k || "").replace(/["']/g, "").trim()).filter(k => k.length > 10);
 
-    if (openRouterKey) {
+    for (const openRouterKey of orKeys) {
         try {
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
@@ -96,9 +98,12 @@ export async function translateText(text: string, targetLang: string = "hi") {
                     translationCache[cacheKey] = translatedText;
                     return translatedText;
                 }
+            } else if (response.status === 429) {
+                console.warn(`Translation OR Key ${openRouterKey.substring(0, 8)} is Rate Limited. Trying next...`);
+                await new Promise(r => setTimeout(r, 1000));
             }
         } catch (err) {
-            console.warn("OpenRouter Translation failed, trying MyMemory...");
+            console.warn("OpenRouter Translation attempt failed...");
         }
     }
 
