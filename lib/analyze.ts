@@ -95,8 +95,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
     const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
     const orKey = (
         process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
-        process.env['NEXT_PUBLIC_OPENROUTER-API-KEY'] ||
-        process.env.NEXT_PUBLIC_API_KEY ||
+        process.env.NEXT_PUBLIC_APIKEY ||
         ""
     ).replace(/["']/g, "").trim();
 
@@ -144,7 +143,10 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
 
     // 4. --- PROVIDER 2: OPENROUTER ---
     const startORReasoning = async (): Promise<LegalAnalysis> => {
-        await new Promise(resolve => setTimeout(resolve, 3800));
+        // Stagger with jitter to avoid collisions
+        const jitter = Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, 3500 + jitter));
+
         if (winnerFound || !orKey) throw new Error("OR_SKIPPED");
 
         console.log("[Analyzer] Gemini latency high. Switching to OR Fallback...");
@@ -155,7 +157,14 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
             defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
         });
 
-        const models = ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001', 'deepseek/deepseek-r1:free'];
+        // Expanded model list to bypass specific rate limits
+        const models = [
+            'openai/gpt-4o-mini',
+            'google/gemini-2.0-flash-001',
+            'anthropic/claude-3-haiku',
+            'meta-llama/llama-3.3-70b-instruct:free',
+            'deepseek/deepseek-r1:free'
+        ];
 
         for (const model of models) {
             if (winnerFound) break;

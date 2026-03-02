@@ -99,12 +99,18 @@ export default function DragDropUpload() {
             if (user && projectId) {
                 try {
                     await user.getIdToken(true);
+
+                    // CRITICAL FIX: Next.js 15/16 Server Actions return data wrapped in Proxies.
+                    // When passed to Firestore's addDoc, these proxies can cause "Maximum array nesting exceeded".
+                    // We must force the data into a plain POJO (Plain Old JavaScript Object).
+                    const plainAnalysis = JSON.parse(JSON.stringify(analysisResult));
+
                     const docRef = await addDoc(collection(db, "documents"), {
                         userId: user.uid,
                         title: (fileToUse as File)?.name || "Text Snippet",
                         originalText: textToAnalyze.substring(0, 5000),
-                        fingerprint: textToAnalyze.substring(0, 500), // Used for duplicate check
-                        analysis: analysisResult,
+                        fingerprint: textToAnalyze.substring(0, 500),
+                        analysis: plainAnalysis,
                         createdAt: serverTimestamp(),
                         isAnalysis: true
                     });
