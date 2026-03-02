@@ -6,10 +6,8 @@ import { LegalAnalysis } from './types';
 import OpenAI from 'openai';
 
 /**
- * LEGAL ANALYSIS ENGINE (Version 15.3 - Vercel & Serialization Optimized)
+ * LEGAL ANALYSIS ENGINE (Version 15.4 - Turbopack Fixed)
  */
-
-export const maxDuration = 60; // Critical for Vercel Hobby plan (defaults to 10s)
 
 const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
 Analyze the document provided and return a high-clarity strategic breakdown.
