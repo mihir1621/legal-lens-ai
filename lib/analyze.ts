@@ -6,13 +6,7 @@ import { LegalAnalysis } from './types';
 import OpenAI from 'openai';
 
 /**
- * LEGAL ANALYSIS ENGINE (Version 15.0 - Reasoning & History Optimized)
- * 
- * Features:
- * 1. Gemini 2.0 Flash (Primary - Zero Latency)
- * 2. OpenRouter Reasoning Models (Fallback - Sequential)
- * 3. Firestore Fingerprint Caching (Cost & Rate Limit Prevention)
- * 4. Automatic History Storage Integration
+ * LEGAL ANALYSIS ENGINE (Version 15.2 - Robust Error & Serialization Optimized)
  */
 
 const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
@@ -40,11 +34,42 @@ STRICT ANALYTICAL RULES:
 4. Risk: Be aggressive in identifying "unfair" clauses or missing termination rights.
 5. If some data is missing from a scan, state 'Inferred' or 'Insufficient Data' in the field.`;
 
+/**
+ * Recursively flattens any nested arrays and ensures primitive values.
+ * Prevents Firestore "Maximum array nesting exceeded" errors.
+ */
+function sanitizeAnalysis(data: any): LegalAnalysis {
+    const flattenStringArray = (arr: any): string[] => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map(item => Array.isArray(item) ? item.flat(10).join(" ") : String(item || ""));
+    };
+
+    return {
+        summary_simple: String(data?.summary_simple || ""),
+        what_it_means: flattenStringArray(data?.what_it_means),
+        key_clauses: (data?.key_clauses || []).map((c: any) => ({
+            title: String(c?.title || "N/A"),
+            explanation: String(c?.explanation || "N/A"),
+            risk: String(c?.risk || "Medium")
+        })).slice(0, 15),
+        red_flags: (data?.red_flags || []).map((r: any) => ({
+            reason: String(r?.reason || "N/A"),
+            severity: String(r?.severity || "Medium")
+        })).slice(0, 15),
+        documents_required: (data?.documents_required || []).map((d: any) => ({
+            name: String(d?.name || "N/A"),
+            purpose: String(d?.purpose || "N/A"),
+            how_to_obtain: flattenStringArray(d?.how_to_obtain)
+        })).slice(0, 15),
+        error: data?.error ? String(data.error) : undefined
+    };
+}
+
 export async function analyzeLegalText(text: string, userId?: string): Promise<LegalAnalysis> {
     const isVisionMode = text.startsWith('IMAGE_DATA:');
     let cleanedText = text.trim();
 
-    // 1. --- INTELLIGENT CACHE CHECK (Prevents Duplicate API Calls) ---
+    // 1. --- INTELLIGENT CACHE CHECK ---
     if (userId && !isVisionMode && cleanedText.length > 50) {
         try {
             const fingerprint = generateFingerprint(cleanedText);
@@ -59,7 +84,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 console.log("[Analyzer] ✅ CACHE HIT: Restoring analysis from history.");
-                return querySnapshot.docs[0].data().analysis;
+                return sanitizeAnalysis(querySnapshot.docs[0].data().analysis);
             }
         } catch (cacheErr) {
             console.warn("[Analyzer] ⚠️ History lookup failed:", cacheErr);
@@ -71,7 +96,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
     const orKey = (
         process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
         process.env['NEXT_PUBLIC_OPENROUTER-API-KEY'] ||
-        process.env.NEXT_PUBLIC_APIKEY ||
+        process.env.NEXT_PUBLIC_API_KEY ||
         ""
     ).replace(/["']/g, "").trim();
 
@@ -80,7 +105,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
     const userPrompt = `Analyze this legal document. ${isVisionMode ? "READ THE IMAGE VISUALLY." : `DOC TEXT: ${cleanedText.substring(0, 5000)}`}\n\nReturn JSON only.`;
     let winnerFound = false;
 
-    // 3. --- PROVIDER 1: GEMINI (High Speed) ---
+    // 3. --- PROVIDER 1: GEMINI ---
     const startGemini = async (): Promise<LegalAnalysis> => {
         if (!googleKey) throw new Error("GEMINI_DISABLED");
         console.log("[Analyzer] Querying Gemini 2.0 Flash...");
@@ -103,7 +128,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
                     : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }],
                 generationConfig: { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 2000 }
             }),
-            signal: AbortSignal.timeout(10000)
+            signal: AbortSignal.timeout(12000)
         });
 
         if (!res.ok) throw new Error(`GEMINI_REJECTED_${res.status}`);
@@ -111,134 +136,102 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
         const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!raw) throw new Error("GEMINI_EMPTY");
 
-        try {
-            const parsed = JSON.parse(raw);
-            winnerFound = true;
-            console.log("[Analyzer] 🏆 Gemini Successfully Analyzed.");
-            return parsed;
-        } catch {
-            throw new Error("GEMINI_INVALID_JSON");
-        }
+        const parsed = JSON.parse(raw);
+        winnerFound = true;
+        console.log("[Analyzer] 🏆 Gemini Successfully Analyzed.");
+        return sanitizeAnalysis(parsed);
     };
 
-    // 4. --- PROVIDER 2: OPENROUTER REASONING (Deep Analysis Fallback) ---
+    // 4. --- PROVIDER 2: OPENROUTER ---
     const startORReasoning = async (): Promise<LegalAnalysis> => {
-        // Staggered delay to prioritize Gemini (Saves OR Credits)
         await new Promise(resolve => setTimeout(resolve, 3800));
-        if (winnerFound || !orKey) throw new Error("OR_SKIPPED_OR_DISABLED");
+        if (winnerFound || !orKey) throw new Error("OR_SKIPPED");
 
-        console.log("[Analyzer] Gemini latency high. Switching to OR Reasoning Model...");
+        console.log("[Analyzer] Gemini latency high. Switching to OR Fallback...");
 
         const client = new OpenAI({
             baseURL: 'https://openrouter.ai/api/v1',
             apiKey: orKey,
-            defaultHeaders: {
-                "HTTP-Referer": "https://legal-lens-ai-three.vercel.app",
-                "X-Title": "LegalLens AI"
-            }
+            defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
         });
 
-        // Reasoning models provided by user + deep fallbacks
-        const models = ['openai/gpt-oss-120b:free', 'google/gemma-3-27b-it:free', 'deepseek/deepseek-r1:free'];
+        const models = ['openai/gpt-4o-mini', 'google/gemini-2.0-flash-001', 'deepseek/deepseek-r1:free'];
 
         for (const model of models) {
             if (winnerFound) break;
             try {
-                console.log(`[Analyzer] Deep Thinking with ${model}...`);
-                const completion: any = await client.chat.completions.create({
+                console.log(`[Analyzer] Attempting ${model}...`);
+                const completion = await client.chat.completions.create({
                     model: model,
                     messages: [
                         { role: "system", content: ANALYSIS_PROMPT_SYSTEM },
                         { role: "user", content: userPrompt }
-                    ]
+                    ],
+                    response_format: { type: "json_object" }
                 });
 
                 const raw = completion.choices?.[0]?.message?.content;
                 if (!raw) continue;
 
-                try {
-                    const parsed = JSON.parse(raw);
-                    winnerFound = true;
-                    console.log(`[Analyzer] 🏆 ${model} (Reasoning) Successfully Analyzed.`);
-                    return parsed;
-                } catch {
-                    console.warn(`[Analyzer] ❌ ${model} returned invalid JSON`);
-                    continue;
-                }
+                const parsed = JSON.parse(raw);
+                winnerFound = true;
+                console.log(`[Analyzer] 🏆 ${model} Successfully Analyzed.`);
+                return sanitizeAnalysis(parsed);
             } catch (err: any) {
                 console.warn(`[Analyzer] ❌ ${model} failed:`, err.message);
-                if (err.status === 429) {
-                    console.log("[Analyzer] Rate Limit Hit. Cooling down...");
-                    await new Promise(r => setTimeout(r, 1000));
-                }
+                if (err.status === 429) await new Promise(r => setTimeout(r, 1000));
             }
         }
-        throw new Error("ALL_MODELS_CONGESTED");
+        throw new Error("ALL_FALLBACKS_FAILED");
     };
 
-    // 5. --- EXECUTION ---
+    // 5. --- EXECUTION & ERROR BRANCHING ---
     try {
         const result = await Promise.any([startGemini(), startORReasoning()]);
         return result;
     } catch (e: any) {
-        // Collect all error info
+        // Safe error info extraction
         const allErrors = e.errors || [e];
         const errorMessages = allErrors.map((err: any) => err.message || String(err)).join(" | ");
         const errorStatuses = allErrors.map((err: any) => err.status || err.code || "N/A").join(", ");
 
-        console.error("[Analyzer] FATAL: All AI routes failed.", {
-            message: e.message,
-            details: errorMessages,
-            statuses: errorStatuses
-        });
+        console.error("[Analyzer] FATAL: All routes failed.", { message: e.message, statuses: errorStatuses });
 
-        const isRateLimit = allErrors.some((err: any) => err.status === 429 || err.message?.includes("429") || err.message?.includes("rate limit"));
-        const isNetwork = allErrors.some((err: any) =>
-            err.message?.toLowerCase().includes("network") ||
-            err.message?.toLowerCase().includes("timeout") ||
-            err.message?.includes("ETIMEDOUT") ||
-            err.code === 'UND_ERR_CONNECT_TIMEOUT'
-        );
+        const isRateLimit = allErrors.some((err: any) => err.status === 429 || err.message?.includes("429"));
+        const isNetwork = allErrors.some((err: any) => err.message?.toLowerCase().includes("network") || err.message?.toLowerCase().includes("timeout"));
 
-        let summary = "The analysis could not be completed.";
-        let implications = ["AI providers are currently unavailable or under heavy load."];
-        let errorType = "General Error";
+        let errorType = "General Service Error";
+        let detail = `Error Details: ${errorMessages.substring(0, 100)}...`;
 
         if (isRateLimit) {
             errorType = "Rate Limit (429)";
-            summary = "API Rate Limit reached. The system is cooling down.";
-            implications = ["AI providers are receiving too many requests. Please wait 30 seconds and try again."];
+            detail = "The AI providers are receiving too many requests. Please wait a moment and try again.";
         } else if (isNetwork) {
-            errorType = "Network/Timeout";
-            summary = "Network connectivity issue or request timeout.";
-            implications = ["The connection to AI services was interrupted. Please check your internet connection."];
-        } else {
-            summary = `Provider Error: ${allErrors[0]?.message || "All routes congested"}`;
-            implications = [
-                `Technical Cause: ${errorMessages.substring(0, 150)}`,
-                "This usually happens when AI models are overloaded or API keys are invalid."
-            ];
+            errorType = "Connection Timeout";
+            detail = "The request took too long or the connection was lost. Check your internet.";
         }
 
         return {
-            summary_simple: `[ANALYSIS BUSY]\n• Error: ${errorType}\n• Detail: ${summary}\n• Action: Please retry in a few moments.`,
-            what_it_means: implications,
-            key_clauses: [{ title: "Limit Reached", explanation: summary, risk: "High" }],
-            red_flags: [{ reason: "Service unavailable. Please refresh.", severity: "Medium" }],
-            documents_required: []
+            summary_simple: `[ANALYSIS BUSY]\n• Status: ${errorType}\n• Detail: ${detail}`,
+            what_it_means: ["The analysis could not be completed at this time.", "Your document data is safe, but AI processing is temporarily congested."],
+            key_clauses: [{ title: "Analysis Interrupted", explanation: detail, risk: "High" }],
+            red_flags: [{ reason: "Service currently unavailable.", severity: "Medium" }],
+            documents_required: [],
+            error: errorType // This will trigger the error branch in components/DragDropUpload.tsx
         };
     }
 }
 
 /**
- * Generates a simple deterministic fingerprint for text caching
+ * Deterministic fingerprint for caching
  */
 function generateFingerprint(text: string): string {
     let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-        const char = text.charCodeAt(i);
+    const sample = text.length > 2000 ? text.substring(0, 1000) + text.substring(text.length - 1000) : text;
+    for (let i = 0; i < sample.length; i++) {
+        const char = sample.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
+        hash |= 0; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(16);
 }
