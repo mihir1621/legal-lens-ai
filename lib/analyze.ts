@@ -6,7 +6,8 @@ import { LegalAnalysis } from './types';
 import OpenAI from 'openai';
 
 /**
- * LEGAL ANALYSIS ENGINE (Version 15.4 - Turbopack Fixed)
+ * LEGAL ANALYSIS ENGINE (Version 15.5 - Vercel Turbopack Fix Confirmed)
+ * This file uses ONLY 'use server' async functions to prevent build errors.
  */
 
 const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
@@ -180,13 +181,12 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
             defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
         });
 
-        // Truly free and high-limit models reordered for maximum success
+        // Confirmed stable free endpoints for OpenRouter
         const models = [
             'google/gemini-2.0-flash-lite-preview-02-05:free',
             'meta-llama/llama-3.3-70b-instruct:free',
             'qwen/qwen-2.5-72b-instruct:free',
-            'meta-llama/llama-3.1-405b-instruct:free',
-            'deepseek/deepseek-r1:free', // Last as it's often 429ing
+            'mistralai/mistral-7b-instruct:free',
             'google/gemma-3-27b-it:free'
         ];
 
