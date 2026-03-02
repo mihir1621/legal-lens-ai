@@ -6,8 +6,10 @@ import { LegalAnalysis } from './types';
 import OpenAI from 'openai';
 
 /**
- * LEGAL ANALYSIS ENGINE (Version 15.2 - Robust Error & Serialization Optimized)
+ * LEGAL ANALYSIS ENGINE (Version 15.3 - Vercel & Serialization Optimized)
  */
+
+export const maxDuration = 60; // Critical for Vercel Hobby plan (defaults to 10s)
 
 const ANALYSIS_PROMPT_SYSTEM = `You are a Senior Legal Strategist specializing in Legal Risk Mitigation. 
 Analyze the document provided and return a high-clarity strategic breakdown.
@@ -91,11 +93,20 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
         }
     }
 
-    // 2. --- SETUP API KEYS ---
-    const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
+    // 2. --- SETUP API KEYS (Broad Lookup for Vercel/Local Resiliency) ---
+    const googleKey = (
+        process.env.GOOGLE_API_KEY ||
+        process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
+        process.env.GEMINI_API_KEY ||
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+        ""
+    ).replace(/["']/g, "").trim();
+
     const orKey = (
+        process.env.OPENROUTER_API_KEY ||
         process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
         process.env.NEXT_PUBLIC_APIKEY ||
+        process.env.OPENROUTER_KEY ||
         ""
     ).replace(/["']/g, "").trim();
 
@@ -104,52 +115,66 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
     const userPrompt = `Analyze this legal document. ${isVisionMode ? "READ THE IMAGE VISUALLY." : `DOC TEXT: ${cleanedText.substring(0, 5000)}`}\n\nReturn JSON only.`;
     let winnerFound = false;
 
-    // 3. --- PROVIDER 1: GEMINI ---
-    const startGemini = async (): Promise<LegalAnalysis> => {
+    // 3. --- PROVIDER 1: GEMINI (With Aggressive Retry) ---
+    const startGemini = async (retryCount = 0): Promise<LegalAnalysis> => {
         if (!googleKey) throw new Error("GEMINI_DISABLED");
-        console.log("[Analyzer] Querying Gemini 2.0 Flash...");
 
-        let base64Data = '';
-        let mimeType = '';
-        if (isVisionMode) {
-            const parts = text.split(';base64,');
-            if (parts.length !== 2) throw new Error("INVALID_IMAGE_DATA_FORMAT");
-            mimeType = parts[0].replace('IMAGE_DATA:', '');
-            base64Data = parts[1];
+        try {
+            console.log(`[Analyzer] Querying Gemini (Attempt ${retryCount + 1})...`);
+
+            let base64Data = '';
+            let mimeType = '';
+            if (isVisionMode) {
+                const parts = text.split(';base64,');
+                if (parts.length !== 2) throw new Error("INVALID_IMAGE_DATA_FORMAT");
+                mimeType = parts[0].replace('IMAGE_DATA:', '');
+                base64Data = parts[1];
+            }
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: isVisionMode
+                        ? [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }, { inlineData: { mimeType, data: base64Data } }] }]
+                        : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }],
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 2000 }
+                }),
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (res.status === 429 && retryCount < 1) {
+                console.warn("[Analyzer] Gemini 429. Retrying in 2s...");
+                await new Promise(r => setTimeout(r, 2000));
+                return startGemini(retryCount + 1);
+            }
+
+            if (!res.ok) throw new Error(`GEMINI_REJECTED_${res.status}`);
+            const data = await res.json();
+            const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!raw) throw new Error("GEMINI_EMPTY");
+
+            const parsed = JSON.parse(raw);
+            winnerFound = true;
+            console.log("[Analyzer] 🏆 Gemini Successfully Analyzed.");
+            return sanitizeAnalysis(parsed);
+
+        } catch (err: any) {
+            if (retryCount < 1 && (err.name === 'AbortError' || err.message.includes('timeout'))) {
+                return startGemini(retryCount + 1);
+            }
+            throw err;
         }
-
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: isVisionMode
-                    ? [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }, { inlineData: { mimeType, data: base64Data } }] }]
-                    : [{ parts: [{ text: `${ANALYSIS_PROMPT_SYSTEM}\n\n${userPrompt}` }] }],
-                generationConfig: { responseMimeType: "application/json", temperature: 0.1, maxOutputTokens: 2000 }
-            }),
-            signal: AbortSignal.timeout(12000)
-        });
-
-        if (!res.ok) throw new Error(`GEMINI_REJECTED_${res.status}`);
-        const data = await res.json();
-        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!raw) throw new Error("GEMINI_EMPTY");
-
-        const parsed = JSON.parse(raw);
-        winnerFound = true;
-        console.log("[Analyzer] 🏆 Gemini Successfully Analyzed.");
-        return sanitizeAnalysis(parsed);
     };
 
-    // 4. --- PROVIDER 2: OPENROUTER ---
+    // 4. --- PROVIDER 2: OPENROUTER (Ultra-Resilient Fallback) ---
     const startORReasoning = async (): Promise<LegalAnalysis> => {
-        // Stagger with jitter to avoid collisions
-        const jitter = Math.random() * 1000;
-        await new Promise(resolve => setTimeout(resolve, 3500 + jitter));
-
+        // Longer stagger for fallbacks to avoid key saturation
+        const stagger = 4500 + (Math.random() * 1000);
+        await new Promise(resolve => setTimeout(resolve, stagger));
         if (winnerFound || !orKey) throw new Error("OR_SKIPPED");
 
-        console.log("[Analyzer] Gemini latency high. Switching to OR Fallback...");
+        console.log("[Analyzer] Primary latency high. Activating OR fallback cluster...");
 
         const client = new OpenAI({
             baseURL: 'https://openrouter.ai/api/v1',
@@ -157,13 +182,14 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
             defaultHeaders: { "HTTP-Referer": "https://legallens.ai", "X-Title": "LegalLens AI" }
         });
 
-        // Expanded model list to bypass specific rate limits
+        // Truly free and high-limit models reordered for maximum success
         const models = [
-            'openai/gpt-4o-mini',
-            'google/gemini-2.0-flash-001',
-            'anthropic/claude-3-haiku',
+            'google/gemini-2.0-flash-lite-preview-02-05:free',
             'meta-llama/llama-3.3-70b-instruct:free',
-            'deepseek/deepseek-r1:free'
+            'qwen/qwen-2.5-72b-instruct:free',
+            'meta-llama/llama-3.1-405b-instruct:free',
+            'deepseek/deepseek-r1:free', // Last as it's often 429ing
+            'google/gemma-3-27b-it:free'
         ];
 
         for (const model of models) {
@@ -177,7 +203,7 @@ export async function analyzeLegalText(text: string, userId?: string): Promise<L
                         { role: "user", content: userPrompt }
                     ],
                     response_format: { type: "json_object" }
-                });
+                }, { timeout: 25000 });
 
                 const raw = completion.choices?.[0]?.message?.content;
                 if (!raw) continue;

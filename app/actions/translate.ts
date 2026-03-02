@@ -28,7 +28,14 @@ export async function translateText(text: string, targetLang: string = "hi") {
     const targetLangName = LANGUAGE_NAMES[targetLang] || "Hindi";
 
     // --- PRIORITY 1: DIRECT GOOGLE GEMINI (Fastest & Most Accurate) ---
-    const googleKey = (process.env.GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
+    const googleKey = (
+        process.env.GOOGLE_API_KEY ||
+        process.env.NEXT_PUBLIC_GOOGLE_API_KEY ||
+        process.env.GEMINI_API_KEY ||
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+        ""
+    ).replace(/["']/g, "").trim();
+
     if (googleKey) {
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleKey}`, {
@@ -54,7 +61,14 @@ export async function translateText(text: string, targetLang: string = "hi") {
     }
 
     // --- PRIORITY 2: OPENROUTER (Multi-language via Gemini Flash) ---
-    const openRouterKey = (process.env.NEXT_PUBLIC_APIKEY || "").replace(/["']/g, "").trim();
+    const openRouterKey = (
+        process.env.OPENROUTER_API_KEY ||
+        process.env.NEXT_PUBLIC_OPENROUTER_API_KEY ||
+        process.env.NEXT_PUBLIC_APIKEY ||
+        process.env.OPENROUTER_KEY ||
+        ""
+    ).replace(/["']/g, "").trim();
+
     if (openRouterKey) {
         try {
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {

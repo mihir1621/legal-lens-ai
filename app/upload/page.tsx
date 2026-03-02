@@ -1,5 +1,7 @@
 import DragDropUpload from '@/components/DragDropUpload';
 
+export const maxDuration = 60; // 60s timeout for Vercel Hobby plan compatibility
+
 export default function UploadPage() {
     return (
         <div className="container mx-auto px-4 py-16 animate-in fade-in slide-in-from-bottom-4 duration-700">

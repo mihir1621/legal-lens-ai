@@ -92,7 +92,7 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
 
 export async function verifyRecaptcha(token: string, action: string) {
     const projectID = "legallens-ai-24087";
-    const apiKey = process.env.GOOGLE_API_KEY;
+    const apiKey = (process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "").replace(/["']/g, "").trim();
     const siteKey = "6Lfci2UsAAAAAPi-lmckbc7N8WdrP2CBE1nxpBPX";
 
     if (!apiKey) {
