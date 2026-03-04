@@ -1,13 +1,17 @@
-/* [LegalLens API v3.4 - CACHE BUSTER: 0304-J] */
+/* [LegalLens API v3.5 - CACHE BUSTER: 0304-K] */
 import Groq from "groq-sdk";
-
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
 
 export async function POST(req) {
     try {
+        const groq = new Groq({
+            apiKey: process.env.GROQ_API_KEY || "missing_key",
+        });
+
         const { text, userId, fileName } = await req.json();
+
+        if (!process.env.GROQ_API_KEY) {
+            return Response.json({ error: "INTERNAL_ERROR: GROQ_API_KEY is missing in environment variables." }, { status: 500 });
+        }
 
         if (!text) {
             return Response.json({ error: "ERR_NO_DATA: No document data received." }, { status: 400 });
