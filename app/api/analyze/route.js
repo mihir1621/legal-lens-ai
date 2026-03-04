@@ -1,13 +1,13 @@
-/* [LegalLens API v3.6 - CACHE BUSTER: 0304-L] */
+/* [LegalLens API v3.7 - CACHE BUSTER: 0304-M] */
 import Groq from "groq-sdk";
 
-export const maxDuration = 60; // Hint for Vercel (Pro users get 60s, Hobby is limited to 10s)
+export const maxDuration = 60; // Hint for Vercel
 
 export async function POST(req) {
     try {
         const groq = new Groq({
             apiKey: process.env.GROQ_API_KEY || "missing_key",
-            timeout: 55000, // 55 seconds internal timeout
+            timeout: 9000, // 9 seconds to stay under Vercel 10s ceiling
         });
 
         const { text, userId, fileName } = await req.json();
@@ -97,13 +97,12 @@ export async function POST(req) {
         } else {
             // --- TEXT FLOW ---
             const cleanedText = text.replace(/IMAGE_DATA:[^,]+,([a-zA-Z0-9+/=]+)/g, "").trim();
-            const chunks = chunkText(cleanedText || "Standard Content", 5500);
+            const chunks = chunkText(cleanedText || "Standard Content", 12000).slice(0, 3);
 
             console.log(`[Groq Text] Analyzing ${chunks.length} chunks...`);
 
             const analyses = await Promise.all(
-                chunks.map(async (chunk, index) => {
-                    await new Promise(r => setTimeout(r, index * 100));
+                chunks.map(async (chunk) => {
                     try {
                         const completion = await groq.chat.completions.create({
                             model: "llama-3.3-70b-versatile",
