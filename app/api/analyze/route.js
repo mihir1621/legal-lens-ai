@@ -95,45 +95,37 @@ export async function POST(req) {
                 }
             }
         } else {
-            // --- TEXT FLOW ---
+            // --- TEXT FLOW (Optimized for Vercel 10s Limit) ---
             const cleanedText = text.replace(/IMAGE_DATA:[^,]+,([a-zA-Z0-9+/=]+)/g, "").trim();
-            const chunks = chunkText(cleanedText || "Standard Content", 12000).slice(0, 3);
+            // Take first 15k characters for a single high-speed pass
+            const relevantText = (cleanedText || "Standard Content").slice(0, 15000);
 
-            console.log(`[Groq Text] Analyzing ${chunks.length} chunks...`);
+            console.log(`[Groq Text] Performing single-pass analysis (15k chars)...`);
 
-            const analyses = await Promise.all(
-                chunks.map(async (chunk) => {
-                    try {
-                        const completion = await groq.chat.completions.create({
-                            model: "llama-3.3-70b-versatile",
-                            messages: [
-                                {
-                                    role: "system",
-                                    content: `You are a Legal Simplifier. Provide ONLY point-wise analysis. NO ESSAYS. ${SCHEMA_GUIDE}`
-                                },
-                                {
-                                    role: "user",
-                                    content: `Summarize this segment in short, document-specific bullet points: ${chunk}`
-                                }
-                            ],
-                            temperature: 0.1,
-                            max_tokens: 1800,
-                            response_format: { type: "json_object" }
-                        });
-                        return JSON.parse(completion.choices[0].message.content);
-                    } catch (err) {
-                        return { summary: [], what_it_means: [], key_clauses: [], risks: [], documents_required: [] };
-                    }
-                })
-            );
+            try {
+                const completion = await groq.chat.completions.create({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        { role: "system", content: `You are a Legal Simplifier. Provide ONLY point-wise analysis. NO ESSAYS. ${SCHEMA_GUIDE}` },
+                        { role: "user", content: `Analyze this document in short bullet points: ${relevantText}` }
+                    ],
+                    temperature: 0.1,
+                    max_tokens: 1200,
+                    response_format: { type: "json_object" }
+                });
+                finalResult = JSON.parse(completion.choices[0].message.content);
+            } catch (err) {
+                console.error("[Single Pass Error]", err.message);
+                throw new Error("ANALYSIS_TIMEOUT: Analysis is taking too long on Vercel. Please try a shorter segment.");
+            }
 
-            // Robust Point-wise Merger
+            // Standardize output
             finalResult = {
-                summary: analyses.flatMap(a => Array.isArray(a.summary) ? a.summary : [a.summary]).filter(s => s && s.length > 5).slice(0, 8),
-                what_it_means: analyses.flatMap(a => a.what_it_means || []).slice(0, 12),
-                key_clauses: analyses.flatMap(a => a.key_clauses || []).slice(0, 15),
-                risks: analyses.flatMap(a => a.risks || []).slice(0, 10),
-                documents_required: analyses.flatMap(a => a.documents_required || [])
+                summary: Array.isArray(finalResult.summary) ? finalResult.summary : [finalResult.summary || "Summary generation failed."],
+                what_it_means: finalResult.what_it_means || [],
+                key_clauses: finalResult.key_clauses || [],
+                risks: finalResult.risks || [],
+                documents_required: finalResult.documents_required || []
             };
         }
 
