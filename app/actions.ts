@@ -32,23 +32,26 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
                 // @ts-ignore
                 const pdf = (await import('pdf-parse/lib/pdf-parse.js')).default;
                 const data = await pdf(buffer);
-                let rawText = data.text;
+                let rawText = (data.text || '').replace(/\0/g, '').trim();
 
-                // SMART SAMPLING: If it's a huge document, take the beginning and the end
-                // Most important legal info (parties, definitions) is at the start.
-                // Signatures and specific items are at the end.
-                if (rawText.length > 8000) {
-                    const start = rawText.substring(0, 6000);
-                    const end = rawText.substring(rawText.length - 2000);
-                    rawText = `${start}\n\n[...Parts omitted for speed...]\n\n${end}`;
-                }
+                console.log(`[Extractor] PDF Text Length: ${rawText.length}`);
 
-                // If text is very short or empty, consider it a scan
-                if (!rawText || rawText.trim().length < 50) {
+                // If text is very short/missing, or contains common "scanned document" patterns, use Vision
+                if (rawText.length < 150) {
+                    console.log("[Extractor] PDF looks like a scan or is empty. Using Vision mode...");
                     const base64 = buffer.toString('base64');
+                    // We send it as a base64 string that startGemini in analyze.ts can handle
                     text = `IMAGE_DATA:application/pdf;base64,${base64}`;
                 } else {
-                    text = rawText;
+                    // SMART SAMPLING for large docs
+                    if (rawText.length > 20000) {
+                        const start = rawText.substring(0, 10000);
+                        const mid = rawText.substring(rawText.length / 2 - 2500, rawText.length / 2 + 2500);
+                        const end = rawText.substring(rawText.length - 5000);
+                        text = `${start}\n\n[...Middle Section...]\n${mid}\n\n[...End Section...]\n${end}`;
+                    } else {
+                        text = rawText;
+                    }
                 }
             } catch (e) {
                 console.error("PDF Parse Error - Falling back to Vision", e);
@@ -62,20 +65,18 @@ export async function extractTextFromFile(formData: FormData): Promise<{ text: s
                 const result = await mammoth.extractRawText({ buffer });
                 text = result.value;
 
-                if (text.length > 8000) {
-                    text = text.substring(0, 7500) + "\n\n[...Omitted for length...]";
+                if (text.length > 30000) {
+                    text = text.substring(0, 25000) + "\n\n[...Omitted for length...]";
                 }
             } catch (e) {
                 console.error("Mammoth Error", e);
                 return { text: '', error: 'Failed to extract text from DOCX' };
             }
         } else if (file.type.startsWith('image/')) {
-            // It's an image, convert to base64
             const base64 = buffer.toString('base64');
             text = `IMAGE_DATA:${file.type};base64,${base64}`;
         } else {
-            // Assume text/plain
-            text = buffer.toString('utf-8').substring(0, 8000);
+            text = buffer.toString('utf-8').substring(0, 30000);
         }
 
         // Only clean if it's not raw image data

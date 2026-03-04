@@ -64,34 +64,61 @@ export default function DragDropUpload() {
         setStep('extracting');
         try {
             let textToAnalyze = textToUse;
+            let fileName = (fileToUse as File)?.name || "Text Snippet";
 
             if (fileToUse && !textToUse) {
+                console.log("[DragDropUpload] Extracting text from file...", fileToUse.name);
                 const formData = new FormData();
                 formData.append('file', fileToUse);
                 const result = await extractTextFromFile(formData);
 
                 if (result.error) {
+                    console.error("[DragDropUpload] Extraction Error:", result.error);
                     alert(result.error);
                     setStep('idle');
                     return;
                 }
                 textToAnalyze = result.text;
+                console.log("[DragDropUpload] Text extracted successfully. Length:", textToAnalyze.length);
 
-                // Set non-image preview
                 if (!textToAnalyze.startsWith('IMAGE_DATA:')) {
                     setPreviewText(textToAnalyze.substring(0, 300) + "...");
                 }
+            } else {
+                console.log("[DragDropUpload] Analyzing manual text input. Length:", textToAnalyze.length);
             }
 
             setStep('analyzing');
             let user = auth.currentUser;
-            const analysisResult = await analyzeLegalText(textToAnalyze, user?.uid);
 
-            if (analysisResult.error) {
-                alert(`Analysis Failed: ${analysisResult.error}`);
+            console.log("[DragDropUpload] Starting AI analysis with API...");
+            const response = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: textToAnalyze,
+                    userId: user?.uid,
+                    fileName: fileName
+                })
+            });
+
+            const apiData = await response.json();
+            console.log("[DragDropUpload] API Response received:", apiData);
+
+            if (apiData.error) {
+                console.error("[DragDropUpload] API Error:", apiData.error);
+                alert(`Analysis Failed: ${apiData.error}`);
                 setStep('idle');
                 return;
             }
+
+            // The API now returns the final structure directly
+            if (!apiData.result) {
+                throw new Error("Invalid API response: Missing analysis result.");
+            }
+
+            const analysisResult: LegalAnalysis = apiData.result;
+            console.log("[DragDropUpload] Final Analysis Result for UI:", analysisResult);
 
             setStep('finalizing');
             const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -99,16 +126,11 @@ export default function DragDropUpload() {
             if (user && projectId) {
                 try {
                     await user.getIdToken(true);
-
-                    // CRITICAL FIX: Next.js 15/16 Server Actions return data wrapped in Proxies.
-                    // When passed to Firestore's addDoc, these proxies can cause "Maximum array nesting exceeded".
-                    // We must force the data into a plain POJO (Plain Old JavaScript Object).
                     const plainAnalysis = JSON.parse(JSON.stringify(analysisResult));
-
                     const docRef = await addDoc(collection(db, "documents"), {
                         userId: user.uid,
-                        title: (fileToUse as File)?.name || "Text Snippet",
-                        originalText: textToAnalyze.substring(0, 5000),
+                        title: fileName,
+                        originalText: textToAnalyze.substring(0, 10000),
                         fingerprint: textToAnalyze.substring(0, 500),
                         analysis: plainAnalysis,
                         createdAt: serverTimestamp(),

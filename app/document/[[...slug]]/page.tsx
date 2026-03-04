@@ -49,12 +49,29 @@ export default function DocumentPage({ params }: { params: Promise<{ slug?: stri
 
     useEffect(() => {
         async function fetchData() {
+            setLoading(true);
             try {
                 if (!id) {
                     setError("No document ID provided");
-                    setLoading(false);
                     return;
                 }
+
+                if (id === 'temp') {
+                    const tempData = localStorage.getItem("temp_analysis");
+                    if (tempData) {
+                        const parsed = JSON.parse(tempData);
+                        setOriginalData(parsed);
+                        setDisplayData(parsed);
+                        setDocName("Guest Analysis");
+                        setLoading(false);
+                        return;
+                    } else {
+                        setError("Temporary analysis not found");
+                        setLoading(false);
+                        return;
+                    }
+                }
+
                 const docRef = doc(db, "documents", id);
                 const docSnap = await getDoc(docRef);
 
@@ -427,7 +444,19 @@ export default function DocumentPage({ params }: { params: Promise<{ slug?: stri
                                 <div className="h-px bg-border/50 my-1" />
                                 <button onClick={handleDownloadPDF} className="w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-primary/10 transition-colors">
                                     <FileText className="h-4 w-4 text-primary" />
-                                    <span>Download as PDF</span>
+                                    <span>Download Visual Report</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        import('@/lib/report-generator').then(module => {
+                                            module.generatePDFReport(displayData, docName);
+                                        });
+                                        setIsShareDropdownOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-primary/10 transition-colors"
+                                >
+                                    <FileText className="h-4 w-4 text-emerald-500" />
+                                    <span>Structured PDF Report</span>
                                 </button>
                                 <button onClick={handleDownloadImage} className="w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-primary/10 transition-colors">
                                     <ImageIcon className="h-4 w-4 text-primary" />
