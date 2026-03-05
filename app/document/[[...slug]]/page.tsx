@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { translateAnalysisResult } from "@/app/translation-service";
 import { DocumentSkeleton } from '@/components/DocumentSkeleton';
 import MagicBento, { MagicCard } from '@/components/MagicBento';
+import FeedbackSystem from '@/components/FeedbackSystem';
 
 
 export default function DocumentPage({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -664,6 +665,10 @@ export default function DocumentPage({ params }: { params: Promise<{ slug?: stri
                     </div>
                 </div>
             )}
+
+            {/* Feedback System Section */}
+            {!loading && !error && !isTranslating && <FeedbackSystem />}
+
             {/* QR Code Modal with Heavy Background Blur */}
             {isQRModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

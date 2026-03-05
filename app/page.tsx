@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import MagnifyingHeroHeading from "@/components/hero/MagnifyingHeroHeading";
+import StatsCounter from "@/components/StatsCounter";
+
+import FeedbackSystem from "@/components/FeedbackSystem";
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [open, setOpen] = useState(false);
@@ -182,6 +185,9 @@ export default function Home() {
           </div>
         </motion.div>
       </section>
+
+      {/* Stats Counter Section */}
+      <StatsCounter />
 
       {/* Features Grid */}
       <motion.section
@@ -448,6 +454,9 @@ export default function Home() {
           ))}
         </div>
       </motion.section>
+
+      {/* Feedback System Section */}
+      <FeedbackSystem />
     </div>
   );
 }
