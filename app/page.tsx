@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database, EyeOff, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database, EyeOff, Sparkles, Zap, MessageSquare, PencilLine, FileCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -279,7 +279,7 @@ export default function Home() {
                                         </button>
                                     </motion.div>
                                 </Link>
-                                <Link href="#how-it-works" className="w-full sm:w-auto">
+                                <Link href="/how-it-works" className="w-full sm:w-auto">
                                     <motion.button 
                                         whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
                                         whileTap={{ scale: 0.95 }}
@@ -601,6 +601,7 @@ export default function Home() {
                         </div>
                     </div>
                 </motion.section>
+
 
                 {/* Trust & Security Section */}
                 <motion.section

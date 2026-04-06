@@ -98,15 +98,14 @@ export default function Navbar() {
                     ) : (
                         <>
                             <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block mr-2">About</Link>
-                            <Link href="/login">
+                            <Link href="/login" className="text-sm font-bold hover:text-primary transition-colors">Login</Link>
+                            <Link href="/signup">
                                 <motion.button
-                                    className="rounded-full px-6 py-2 text-sm font-semibold transition-all flex items-center gap-2"
-                                    style={{ background: '#f97316', color: '#ffffff', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
+                                    className="rounded-full px-6 py-2 text-sm font-black transition-all flex items-center gap-2 bg-primary text-white shadow-lg shadow-primary/25"
                                     whileHover={{ scale: 1.05, boxShadow: '0 6px 20px rgba(249,115,22,0.45)' }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <User className="h-4 w-4" />
-                                    Login
+                                    Sign Up
                                 </motion.button>
                             </Link>
                         </>

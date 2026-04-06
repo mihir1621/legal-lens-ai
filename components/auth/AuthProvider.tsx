@@ -7,7 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 
 const AUTH_PATHS = ['/login', '/signup', '/forgot-password'];
-const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/privacy', '/terms'];
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/forgot-password', '/privacy', '/terms', '/how-it-works', '/about'];
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
