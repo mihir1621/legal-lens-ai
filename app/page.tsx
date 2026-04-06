@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -333,15 +333,18 @@ export default function Home() {
                                 </div>
                                 <div>
                                     <h3 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
-                                        Instant <br /><span className="text-primary italic font-serif">Intelligent Summary</span>
+                                        Instant <br /><span className="text-primary italic font-serif">Plain English Summary</span>
                                     </h3>
-                                    <p className="text-muted-foreground text-lg max-w-sm leading-relaxed">
-                                        Our proprietary engine dissolves complex jargon, leaving only the <span className="text-foreground font-bold underline decoration-primary/30">pure strategic essence</span> of your contract.
+                                    <p className="text-muted-foreground text-lg max-w-sm leading-relaxed mb-4">
+                                        Stop squinting at 50-page contracts. We turn long legal jargon into a <span className="text-foreground font-bold underline decoration-primary/30">2-minute read</span> so you know exactly what you're signing.
                                     </p>
+                                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground italic leading-relaxed">
+                                        <strong className="text-primary not-italic">Example:</strong> Reading the CliffNotes of a 30-page rental lease to instantly find out if pets are actually allowed.
+                                    </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-2 gap-4">
-                                    {["Clause Extraction", "Plain English", "Obligations", "Action Items"].map(t => (
+                                    {["Simple Language", "Key Dates", "Your Duties", "Next Steps"].map(t => (
                                         <div key={t} className="flex items-center gap-2 group/item">
                                             <div className="h-1 w-4 rounded-full bg-primary/20 group-hover/item:w-6 transition-all duration-300" />
                                             <span className="text-xs font-black uppercase tracking-wider opacity-60 group-hover/item:opacity-100 group-hover/item:text-primary transition-all underline decoration-transparent group-hover/item:decoration-primary/30 underline-offset-4 font-mono">{t}</span>
@@ -427,8 +430,11 @@ export default function Home() {
                                 <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                                     <ShieldCheck className="h-7 w-7" />
                                 </div>
-                                <h3 className="text-3xl font-black tracking-tight">Risk <br />Detector</h3>
-                                <p className="text-muted-foreground text-sm leading-relaxed">AI-trained to identify hidden clauses, non-refundable deposits, and unfair liability terms before you sign.</p>
+                                <h3 className="text-3xl font-black tracking-tight leading-tight">Smart <br />Risk Detector</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">We scan every sentence to find hidden "gotchas," unfair fees, or tricky cancellation rules that companies hope you'll miss.</p>
+                                <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-[11px] text-muted-foreground italic leading-relaxed">
+                                    <strong className="text-emerald-500 not-italic">Example:</strong> It flags a gym contract that tries to charge you $500 just for cancelling your membership early.
+                                </div>
                             </div>
                             <div className="mt-12 bg-card/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 shadow-2xl">
                                 <div className="flex items-center justify-between mb-4">
@@ -442,15 +448,14 @@ export default function Home() {
                             </div>
                         </motion.div>
 
-                        {/* THIRD FEATURE - LONG CARD (SMART COMPARISON) */}
                         <motion.div
-                            className="md:col-span-12 bg-background border-2 border-primary/10 rounded-[4rem] p-16 flex flex-col md:flex-row items-center gap-16 group relative overflow-hidden mt-12 shadow-2xl shadow-primary/5 border-dashed"
+                            className="md:col-span-12 bg-background border-2 border-primary/10 rounded-[4rem] p-12 md:p-20 flex flex-col md:flex-row items-stretch gap-16 group relative overflow-hidden mt-12 shadow-2xl shadow-primary/5 border-dashed min-h-[600px]"
                             initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
                         >
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
-                            <div className="relative h-80 w-full md:w-1/2 bg-muted/40 rounded-[3rem] border border-border/40 overflow-hidden shadow-inner flex items-center justify-center group/comparison bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)]">
+                            <div className="relative h-[480px] w-full md:w-1/2 bg-muted/40 rounded-[3rem] border border-border/40 overflow-hidden shadow-inner flex items-center justify-center group/comparison bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)] self-stretch">
                                 {/* Mockup of Document Comparison with real examples */}
                                 <div className="relative flex items-center justify-center scale-90 md:scale-110">
                                     {/* Card 1: Rental Agreement (v1) */}
@@ -509,20 +514,24 @@ export default function Home() {
                                         className="absolute z-20 left-1/2 top-[30%] -translate-x-1/2 h-1 w-0 bg-blue-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.8)]"
                                         animate={{ 
                                             width: ["0%", "90%", "0%"],
-                                            top: ["20%", "80%", "20%"] 
+                                            top: ["15%", "85%", "15%"] 
                                         }}
                                         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                                     />
                                 </div>
                             </div>
-                            <div className="flex-1 space-y-8 relative z-20">
+                            <div className="flex-1 space-y-10 relative z-20 flex flex-col justify-center">
                                 <div className="flex items-center gap-6">
                                     <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-xl shadow-blue-500/5 backdrop-blur-md transition-all duration-500 group-hover:scale-110 group-hover:bg-blue-500/20">
                                         <Search className="h-8 w-8" />
                                     </div>
-                                    <h3 className="text-5xl font-black tracking-tight leading-none group-hover:translate-x-1 transition-transform duration-500">Smart <span className="text-blue-500 italic font-serif">Comparison</span></h3>
+                                    <h3 className="text-5xl font-black tracking-tight leading-none group-hover:translate-x-1 transition-transform duration-500">Document <span className="text-blue-500 italic font-serif">Comparison</span></h3>
                                 </div>
-                                <p className="text-muted-foreground text-lg">Upload multiple versions of a document to see exactly what changed in the fine print. No more hunting for edits.</p>
+                                <p className="text-muted-foreground text-lg leading-relaxed">Instantly see every single word that changed between two versions of a contract. We highlight exactly what was added, removed, or "sneaked in."</p>
+                                <div className="p-5 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-sm text-muted-foreground italic leading-relaxed max-w-lg">
+                                    <strong className="text-blue-500 not-italic uppercase tracking-widest text-[10px] block mb-1">Real-World Case:</strong> 
+                                    See if your landlord added a new "cleaning fee" in the second draft of your apartment lease that wasn't there in the first one.
+                                </div>
                                 <button className="text-sm font-black text-primary flex items-center gap-2 group/btn uppercase tracking-widest">
                                     Explore Diff Engine <ChevronRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                 </button>
@@ -583,6 +592,66 @@ export default function Home() {
                                             </ul>
                                         </div>
                                     </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </motion.section>
+
+                {/* Trust & Security Section */}
+                <motion.section
+                    className="w-full py-32 bg-background relative overflow-hidden"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.03),transparent_50%)]" />
+                    <div className="container mx-auto px-4 relative z-10">
+                        <div className="text-center mb-20 space-y-4">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-black uppercase tracking-widest mb-4">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                100% Secure & Private
+                            </div>
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">Your Privacy is our <br /><span className="text-primary italic font-serif">Top Priority</span></h2>
+                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto italic leading-relaxed">Legal documents are sensitive. We've built LegalLens with security at every layer.</p>
+                        </div>
+
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {[
+                                {
+                                    icon: FolderX,
+                                    title: "Zero Storage Policy",
+                                    desc: "Your files are your own. Documents are processed in real-time and purged from our servers immediately after analysis.",
+                                    color: "text-red-500",
+                                    bg: "bg-red-500/10"
+                                },
+                                {
+                                    icon: Lock,
+                                    title: "Bank-Grade Encryption",
+                                    desc: "Every document is protected with AES-256 bit encryption during transit, shielding your sensitive data from any prying eyes.",
+                                    color: "text-blue-500",
+                                    bg: "bg-blue-500/10"
+                                },
+                                {
+                                    icon: Cpu,
+                                    title: "Isolated AI Processing",
+                                    desc: "Our private AI models never learn from your data. Your private documents are never used for training third-party AI systems.",
+                                    color: "text-primary",
+                                    bg: "bg-primary/10"
+                                }
+                            ].map((item, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="p-10 rounded-[3rem] bg-card/60 backdrop-blur-xl border border-border/40 hover:border-primary/20 transition-all duration-500 hover:shadow-2xl group/sec"
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                >
+                                    <div className={`h-16 w-16 rounded-2xl ${item.bg} flex items-center justify-center ${item.color} mb-8 border border-white/5 shadow-inner transition-transform duration-500 group-hover/sec:scale-110 group-hover/sec:rotate-3`}>
+                                        <item.icon className="h-8 w-8" />
+                                    </div>
+                                    <h4 className="text-2xl font-black mb-4 tracking-tight">{item.title}</h4>
+                                    <p className="text-muted-foreground leading-relaxed text-sm font-medium">{item.desc}</p>
                                 </motion.div>
                             ))}
                         </div>
