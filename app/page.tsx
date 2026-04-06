@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database, EyeOff } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database, EyeOff, Sparkles, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -269,21 +269,25 @@ export default function Home() {
                                 <Link href="/upload" className="w-full sm:w-auto">
                                     <motion.div 
                                         className="relative group"
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                     >
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-400 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                                        <button className="relative flex h-16 w-full sm:w-auto items-center justify-center rounded-full bg-primary px-10 text-base font-black text-white transition-all shadow-xl shadow-primary/25">
-                                            Analyze Your First Document
-                                            <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                        <div className="absolute -inset-1.5 bg-gradient-to-r from-primary via-orange-400 to-primary rounded-full blur-lg opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                                        <button className="relative flex h-16 w-full sm:w-auto items-center justify-center rounded-full bg-gradient-to-r from-primary to-orange-500 px-10 text-base font-black text-white transition-all shadow-2xl shadow-primary/40 border border-white/20">
+                                            Analyze Your Case Now
+                                            <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-2" />
                                         </button>
                                     </motion.div>
                                 </Link>
-                                <Link
-                                    href="#how-it-works"
-                                    className="h-16 w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-border bg-background/50 px-10 text-base font-bold text-foreground backdrop-blur-md transition-all hover:bg-muted hover:scale-105 active:scale-95"
-                                >
-                                    Experience the Demo
+                                <Link href="#how-it-works" className="w-full sm:w-auto">
+                                    <motion.button 
+                                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className="h-16 w-full sm:w-auto inline-flex items-center justify-center rounded-full border-2 border-primary/30 bg-background/50 px-10 text-base font-black text-foreground backdrop-blur-xl transition-all hover:border-primary/60 group/demo shadow-xl"
+                                    >
+                                        <Sparkles className="mr-3 h-5 w-5 text-primary animate-pulse" />
+                                        Try AI Legal Assistant
+                                    </motion.button>
                                 </Link>
                             </div>
                         </motion.div>
@@ -532,8 +536,8 @@ export default function Home() {
                                     <strong className="text-blue-500 not-italic uppercase tracking-widest text-[10px] block mb-1">Real-World Case:</strong> 
                                     See if your landlord added a new "cleaning fee" in the second draft of your apartment lease that wasn't there in the first one.
                                 </div>
-                                <button className="text-sm font-black text-primary flex items-center gap-2 group/btn uppercase tracking-widest">
-                                    Explore Diff Engine <ChevronRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                <button className="text-sm font-black text-primary flex items-center gap-2 group/btn uppercase tracking-[0.2em] hover:opacity-80 transition-all">
+                                    Get Instant Legal Insights <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-2" />
                                 </button>
                             </div>
                         </motion.div>
