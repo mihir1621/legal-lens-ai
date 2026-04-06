@@ -39,7 +39,7 @@ const STEPS = [
     {
         icon: FileCheck,
         title: "03. Structured Roadmap",
-        subtitle: "From Jargon to Action",
+        subtitle: "From Confusion to Action",
         desc: "The final output isn't a long report—it's a tactical dashboard. We categorize results into Risks (Red Flags), Duties (What you must do), and Benefits (Your rights). You get an AI-generated summary that even a 10-year-old could understand, followed by a prioritized list of recommended 'Next Steps'.",
         highlight: "Translate 50 pages of dense legal text into a 3-minute actionable summary.",
         color: "from-emerald-500 to-teal-600"

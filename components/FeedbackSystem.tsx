@@ -150,9 +150,10 @@ export default function FeedbackSystem() {
                             </div>
                         </div>
 
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                             {rating && (
                                 <motion.div
+                                    key={rating}
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: "auto" }}
                                     exit={{ opacity: 0, height: 0 }}
@@ -160,16 +161,30 @@ export default function FeedbackSystem() {
                                 >
                                     <div className="space-y-3">
                                         <h3 className="text-sm font-semibold flex items-center gap-2">
-                                            <MessageSquare className="h-4 w-4 text-primary" />
-                                            What could we do better?
+                                            {rating === 'up' ? (
+                                                <>
+                                                    <Sparkles className="h-4 w-4 text-primary" />
+                                                    What did we get right?
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <MessageSquare className="h-4 w-4 text-destructive" />
+                                                    What went wrong?
+                                                </>
+                                            )}
                                         </h3>
                                         <div className="flex flex-wrap gap-2">
-                                            {improvements.map((item) => (
+                                            {(rating === 'up' 
+                                                ? ["Extreme Precision", "Time Saved", "Easy Vocabulary", "Risk Clarity", "User Experience"]
+                                                : ["Too Complex", "Inaccurate Info", "Slow Results", "UI Clutter", "Missing Clauses"]
+                                            ).map((item) => (
                                                 <button
                                                     key={item}
                                                     onClick={() => toggleImprovement(item)}
-                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${selectedImprovements.includes(item)
-                                                        ? 'bg-primary/20 border-primary text-primary'
+                                                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all border ${selectedImprovements.includes(item)
+                                                        ? rating === 'up' 
+                                                            ? 'bg-primary/20 border-primary text-primary'
+                                                            : 'bg-destructive/20 border-destructive text-destructive'
                                                         : 'bg-white/5 border-white/10 text-muted-foreground hover:border-primary/30 hover:text-foreground'
                                                         }`}
                                                 >
@@ -180,21 +195,25 @@ export default function FeedbackSystem() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <h3 className="text-sm font-semibold">Any other feedback or questions?</h3>
+                                        <h3 className="text-sm font-semibold">
+                                            {rating === 'up' ? "Any other praise or suggestions?" : "How can we make this perfect for you?"}
+                                        </h3>
                                         <textarea
                                             value={comment}
                                             onChange={(e) => setComment(e.target.value)}
-                                            placeholder="Your suggestions..."
-                                            className="w-full min-h-[80px] p-3 rounded-xl bg-white/5 border border-white/10 text-sm focus:outline-none focus:border-primary/30 resize-none"
+                                            placeholder={rating === 'up' ? "Tell us more..." : "Explain the issue..."}
+                                            className="w-full min-h-[80px] p-4 rounded-xl bg-white/5 border border-white/10 text-sm focus:outline-none focus:border-primary/30 resize-none transition-all"
                                         />
                                     </div>
 
                                     <button
                                         onClick={handleSubmit}
-                                        className="w-full h-11 bg-primary text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]"
+                                        className={`w-full h-11 text-white text-sm font-black rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                                            rating === 'up' ? 'bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20' : 'bg-destructive hover:bg-destructive/90 shadow-lg shadow-destructive/20'
+                                        }`}
                                     >
                                         <Send className="h-4 w-4" />
-                                        Submit
+                                        Send Feedback
                                     </button>
                                 </motion.div>
                             )}

@@ -536,17 +536,26 @@ export default function Home() {
                                     <strong className="text-blue-500 not-italic uppercase tracking-widest text-[10px] block mb-1">Real-World Case:</strong> 
                                     See if your landlord added a new "cleaning fee" in the second draft of your apartment lease that wasn't there in the first one.
                                 </div>
-                                <button className="text-sm font-black text-primary flex items-center gap-2 group/btn uppercase tracking-[0.2em] hover:opacity-80 transition-all">
-                                    Get Instant Legal Insights <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-2" />
-                                </button>
+                                <Link href="/upload">
+                                    <motion.button 
+                                        whileHover={{ x: 8 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="text-sm font-black text-primary flex items-center gap-3 group/btn uppercase tracking-[0.2em] transition-all hover:text-orange-600"
+                                    >
+                                        Get Instant Legal Insights 
+                                        <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-2" />
+                                    </motion.button>
+                                </Link>
                             </div>
                         </motion.div>
                     </div>
                 </motion.section>
 
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-border/40 to-transparent" />
+
                 {/* Documents We Simplify Section */}
                 <motion.section
-                    className="w-full bg-muted/20 py-32 border-y border-border/40"
+                    className="w-full bg-muted/5 py-40 border-y border-border/20"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -605,20 +614,21 @@ export default function Home() {
 
                 {/* Trust & Security Section */}
                 <motion.section
-                    className="w-full py-32 bg-background relative overflow-hidden"
+                    className="w-full py-40 bg-background relative overflow-hidden"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
                 >
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(16,185,129,0.03),transparent_50%)]" />
                     <div className="container mx-auto px-4 relative z-10">
-                        <div className="text-center mb-20 space-y-4">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-black uppercase tracking-widest mb-4">
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                                100% Secure & Private
+                        <div className="text-center mb-24 space-y-6">
+                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[11px] font-black uppercase tracking-widest mb-4 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                                <ShieldCheck className="h-4 w-4" />
+                                Enterprise Privacy Standards
                             </div>
-                            <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">Your Privacy is our <br /><span className="text-primary italic font-serif">Top Priority</span></h2>
-                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto italic leading-relaxed">Legal documents are sensitive. We've built LegalLens with security at every layer.</p>
+                            <h2 className="text-5xl md:text-8xl font-black tracking-tighter leading-tight">Your Data is <br /><span className="text-primary italic font-serif">Untouchable</span></h2>
+                            <p className="text-muted-foreground text-xl max-w-2xl mx-auto italic leading-relaxed font-medium">Zero-tracking. Zero-retention. Digital Shredding after every analysis.</p>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8">
