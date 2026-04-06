@@ -7,8 +7,106 @@ import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import MagnifyingHeroHeading from "@/components/hero/MagnifyingHeroHeading";
 import StatsCounter from "@/components/StatsCounter";
-
 import FeedbackSystem from "@/components/FeedbackSystem";
+
+const DOCUMENT_LIST = [
+    {
+        title: "Rental Agreements",
+        description: "Lease terms, deposits, and maintenance clauses.",
+        image: "/documents/rental-agreement.png",
+        details: ["Security deposit rules", "Maintenance responsibilities", "Early termination penalties", "Renewal & rent escalation"]
+    },
+    {
+        title: "Employment Contracts",
+        description: "Offer letters, notice periods, and benefits.",
+        image: "/documents/employment-contract.png",
+        details: ["Compensation & bonuses", "Non-compete clauses", "Notice period terms", "Termination conditions"]
+    },
+    {
+        title: "Service Agreements",
+        description: "Deliverables, payment terms, and timelines.",
+        image: "/documents/service-agreement.png",
+        details: ["Scope of services", "Payment milestones", "Liability limitations", "Warranty provisions"]
+    },
+    {
+        title: "NDAs & Policies",
+        description: "Confidentiality and data protection terms.",
+        image: "/documents/nda.png",
+        details: ["Confidential info scope", "Duration of obligation", "Permitted disclosures", "Breach consequences"]
+    },
+    {
+        title: "Loan Agreements",
+        description: "Interest rates, repayment schedules, and collateral.",
+        image: "/documents/loan-agreement.png",
+        details: ["Interest rate type", "Repayment schedule", "Collateral requirements", "Default & penalties"]
+    },
+    {
+        title: "Partnership Deeds",
+        description: "Profit sharing, roles, and dissolution terms.",
+        image: "/documents/partnership.png",
+        details: ["Capital contributions", "Profit/loss sharing", "Decision-making rights", "Exit & dissolution"]
+    },
+    {
+        title: "IP Agreements",
+        description: "Copyrights, trademarks, and ownership rights.",
+        image: "/documents/ip-agreement.png",
+        details: ["Ownership transfer", "License scope & limits", "Royalty terms", "Infringement remedies"]
+    },
+    {
+        title: "Consulting Contracts",
+        description: "Scope of work, hourly rates, and deliverables.",
+        image: "/documents/consulting.png",
+        details: ["Engagement scope", "Fee structure", "Intellectual property", "Confidentiality terms"]
+    },
+    {
+        title: "Privacy Policies",
+        description: "Data collection, user rights, and tracking terms.",
+        image: "/documents/privacy-policy.png",
+        details: ["Data collected types", "Third-party sharing", "User opt-out rights", "Retention periods"]
+    },
+    {
+        title: "Operating Agreements",
+        description: "Business ownership, roles, and voting rights.",
+        image: "/documents/operating-agreement.png",
+        details: ["Member responsibilities", "Voting procedures", "Profit distribution", "Amendment process"]
+    },
+    {
+        title: "SaaS Agreements",
+        description: "Service limits, data ownership, and SLAs.",
+        image: "/documents/saas-service.png",
+        details: ["Uptime guarantees", "Data portability", "Usage limitations", "Auto-renewal traps"]
+    },
+    {
+        title: "Real Estate Sale",
+        description: "Purchase terms, deadlines, and contingencies.",
+        image: "/documents/real-estate.png",
+        details: ["Purchase price terms", "Inspection deadlines", "Financing contingencies", "Closing conditions"]
+    },
+    {
+        title: "Wills & Trusts",
+        description: "Estate planning, beneficiaries, and authority.",
+        image: "/documents/will-trust.png",
+        details: ["Beneficiary details", "Asset distribution", "Executor powers", "Trust conditions"]
+    },
+    {
+        title: "Non-Compete Agreements",
+        description: "Restrictive covenants, duration, and scope.",
+        image: "/documents/non-compete.png",
+        details: ["Geographic restrictions", "Duration limits", "Industry scope", "Enforcement penalties"]
+    },
+    {
+        title: "Power of Attorney",
+        description: "Authority grants, limitations, and revocation.",
+        image: "/documents/power-of-attorney.png",
+        details: ["Powers granted", "Effective conditions", "Revocation process", "Agent limitations"]
+    },
+    {
+        title: "Vendor Contracts",
+        description: "Supply terms, pricing, and delivery schedules.",
+        image: "/documents/vendor-contract.png",
+        details: ["Pricing & discounts", "Delivery timelines", "Quality standards", "Dispute resolution"]
+    }
+];
 
 function FAQItem({ question, answer, index }: { question: string; answer: string; index: number }) {
   const [open, setOpen] = useState(false);
@@ -72,391 +170,469 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 }
 
 export default function Home() {
-  const [showGreeting, setShowGreeting] = useState(false);
-  const [userName, setUserName] = useState("");
+    const [showGreeting, setShowGreeting] = useState(false);
+    const [userName, setUserName] = useState("");
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        // Check if we've already shown the welcome message in this session
-        const hasShown = sessionStorage.getItem("welcome_shown");
-        if (!hasShown) {
-          setUserName(user.displayName || user.email?.split('@')[0] || "User");
-          setShowGreeting(true);
-          sessionStorage.setItem("welcome_shown", "true");
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                const hasShown = sessionStorage.getItem("welcome_shown");
+                if (!hasShown) {
+                    setUserName(user.displayName || user.email?.split('@')[0] || "User");
+                    setShowGreeting(true);
+                    sessionStorage.setItem("welcome_shown", "true");
+                    const timer = setTimeout(() => setShowGreeting(false), 3500);
+                    return () => clearTimeout(timer);
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
-          // Keep visible for 3.5 seconds
-          const timer = setTimeout(() => {
-            setShowGreeting(false);
-          }, 3500);
-          return () => clearTimeout(timer);
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setMousePos({ x: e.clientX, y: e.clientY });
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
 
-  return (
-    <div className="flex flex-col items-center relative">
-      {/* --- Welcome Overlay --- */}
-      <AnimatePresence>
-        {showGreeting && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background"
-          >
-            {/* Skeleton Background (Behind Greeting) */}
-            <div className="absolute inset-0 flex flex-col items-center pt-32 px-4 space-y-8 opacity-20 pointer-events-none">
-              {/* Hero Skeleton */}
-              <div className="h-8 w-64 bg-primary/20 rounded-full animate-pulse" />
-              <div className="h-16 w-3/4 max-w-2xl bg-foreground/10 rounded-xl animate-pulse" />
-              <div className="h-16 w-1/2 max-w-xl bg-foreground/10 rounded-xl animate-pulse" />
-              <div className="h-4 w-96 max-w-lg bg-muted-foreground/20 rounded-lg animate-pulse mt-4" />
-              <div className="flex gap-4 mt-8">
-                <div className="h-12 w-40 bg-primary/20 rounded-full animate-pulse" />
-                <div className="h-12 w-40 bg-foreground/5 rounded-full animate-pulse" />
-              </div>
+    return (
+        <div className="flex min-h-screen flex-col bg-background selection:bg-primary/20 selection:text-primary bg-grain relative overflow-x-hidden group">
+            {/* Dynamic Cursor Spotlight Effect */}
+            <motion.div
+                className="pointer-events-none fixed inset-0 z-30 transition-opacity duration-300 pointer-events-none mix-blend-screen hidden dark:block"
+                animate={{
+                    background: `radial-gradient(800px at ${mousePos.x}px ${mousePos.y}px, rgba(249, 115, 22, 0.08), transparent 80%)`,
+                }}
+            />
+
+            {/* --- Welcome Overlay --- */}
+            <AnimatePresence>
+                {showGreeting && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
+                    >
+                        <div className="absolute inset-0 flex flex-col items-center pt-32 px-4 space-y-8 opacity-10 pointer-events-none">
+                            <div className="h-8 w-64 bg-primary/20 rounded-full animate-pulse" />
+                            <div className="h-16 w-3/4 max-w-2xl bg-foreground/10 rounded-xl animate-pulse" />
+                            <div className="h-12 w-1/2 max-w-xl bg-foreground/10 rounded-xl animate-pulse" />
+                        </div>
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 1.1, opacity: 0 }}
+                            className="text-center z-10"
+                        >
+                            <h1 className="text-5xl font-black tracking-tight mb-2">Welcome back,</h1>
+                            <span className="text-6xl text-primary font-black block">{userName}</span>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Background Background Mesh + Noise */}
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] animate-pulse-subtle" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-[150px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
             </div>
 
-            {/* Greeting Text */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 1.1, opacity: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="z-10 text-center"
-            >
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-                Welcome to LegalLens, <br />
-                <span className="text-primary">{userName}</span>
-              </h1>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <main className="flex-1 relative">
+                {/* HERO SECTION */}
+                <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-20 pb-32 px-4 overflow-hidden">
+                    <div className="container mx-auto text-center z-10 relative">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        >
+                            <motion.div
+                                className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary tracking-widest uppercase mb-8 shadow-sm shadow-primary/10"
+                                whileHover={{ scale: 1.05, backgroundColor: "rgba(249, 115, 22, 0.15)" }}
+                            >
+                                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                Interactive Legal Intelligence
+                            </motion.div>
 
-      {/* Hero Section */}
-      <section className="relative w-full overflow-hidden px-4 pt-20 pb-32 text-center md:pt-32">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+                            <MagnifyingHeroHeading />
 
-        <motion.div
-          className="container mx-auto max-w-4xl space-y-6"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0, 0, 0.2, 1] }}
-        >
-          <motion.div
-            className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-bold text-white backdrop-blur-sm"
-            whileHover={{ scale: 1.05 }}
-          >
-            <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-            AI-Powered Legal Simplification
-          </motion.div>
+                            <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground sm:text-xl font-medium leading-relaxed">
+                                Don't let complex legal jargon hold you back. LegalLens AI transforms dense contracts into <span className="text-foreground font-bold underline decoration-primary/30 underline-offset-4 pointer-events-auto hover:text-primary transition-colors cursor-help">clear, actionable intelligence</span> in seconds.
+                            </p>
 
-          <MagnifyingHeroHeading />
-
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Upload rental agreements, contracts, or policies. Get clear summaries, risk detection, and actionable advice instantly.
-          </p>
-
-          <div className="flex flex-col justify-center gap-4 sm:flex-row sm:gap-6 pt-4">
-            <Link
-              href="/upload"
-              className="inline-flex h-12 items-center justify-center rounded-full px-8 text-base font-semibold transition-all relative overflow-hidden group shadow-lg"
-              style={{ background: '#f97316', color: '#ffffff' }}
-            >
-              <motion.div
-                className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"
-              />
-              <span className="relative z-10 flex items-center">
-                Analyze Document
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </span>
-            </Link>
-            <Link
-              href="#features"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-border bg-background/50 px-8 text-base font-medium text-foreground backdrop-blur-sm transition-all hover:bg-muted hover:scale-105 active:scale-95"
-            >
-              See How It Works
-            </Link>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Stats Counter Section */}
-      <StatsCounter />
-
-      {/* Features Grid */}
-      <motion.section
-        id="features"
-        className="container mx-auto px-4 py-24"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-      >
-        <h2 className="mb-16 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Everything You Need to Sign With Confidence
-        </h2>
-
-        <div className="grid gap-8 md:grid-cols-3">
-          {[
-            {
-              icon: FileText,
-              title: "Instant Summaries",
-              description: "Get concise, plain English explanations of complex legal jargon and clauses.",
-              details: ["Breaks down complex clauses", "Plain English translations", "Key obligations highlighted", "Action items extracted"]
-            },
-            {
-              icon: ShieldCheck,
-              title: "Risk Detection",
-              description: "Identify hidden clauses, non-refundable deposits, and unfair liability terms.",
-              details: ["Flags unfair terms", "Spots hidden penalties", "Liability analysis", "Risk severity scoring"]
-            },
-            {
-              icon: Search,
-              title: "Smart Comparison",
-              description: "Compare two contracts side-by-side to see differences in terms and penalties.",
-              details: ["Side-by-side diff view", "Clause-level matching", "Penalty comparison", "Missing terms detection"]
-            }
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              className="flip-card h-64 rounded-2xl"
-              initial={{ opacity: 1, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <div className="flip-card-inner">
-                {/* FRONT */}
-                <div className="flip-card-front border border-border bg-card p-8 flex flex-col justify-center">
-                  <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <feature.icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="mb-2 text-xl font-semibold text-foreground">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </div>
-
-                {/* BACK */}
-                <div className="flip-card-back flip-back-feature flex flex-col justify-center items-center p-8 text-center">
-                  <div className="icon-wrap mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl">
-                    <feature.icon className="h-6 w-6" />
-                  </div>
-                  <h4 className="text-lg font-bold mb-4">{feature.title}</h4>
-                  <ul className="space-y-2 text-left w-full px-2">
-                    {feature.details.map((detail, j) => (
-                      <li key={j} className="flex items-start gap-2 text-sm">
-                        <span className="dot-accent mt-1 h-1.5 w-1.5 rounded-full shrink-0" />
-                        {detail}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-32">
-          <h3 className="mb-12 text-center text-2xl font-bold text-foreground sm:text-3xl">
-            Documents We Simplify for You
-          </h3>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                title: "Rental Agreements",
-                description: "Lease terms, deposits, and maintenance clauses.",
-                image: "/documents/rental-agreement.png",
-                details: ["Security deposit rules", "Maintenance responsibilities", "Early termination penalties", "Renewal & rent escalation"]
-              },
-              {
-                title: "Employment Contracts",
-                description: "Offer letters, notice periods, and benefits.",
-                image: "/documents/employment-contract.png",
-                details: ["Compensation & bonuses", "Non-compete clauses", "Notice period terms", "Termination conditions"]
-              },
-              {
-                title: "Service Agreements",
-                description: "Deliverables, payment terms, and timelines.",
-                image: "/documents/service-agreement.png",
-                details: ["Scope of services", "Payment milestones", "Liability limitations", "Warranty provisions"]
-              },
-              {
-                title: "NDAs & Policies",
-                description: "Confidentiality and data protection terms.",
-                image: "/documents/nda.png",
-                details: ["Confidential info scope", "Duration of obligation", "Permitted disclosures", "Breach consequences"]
-              },
-              {
-                title: "Loan Agreements",
-                description: "Interest rates, repayment schedules, and collateral.",
-                image: "/documents/loan-agreement.png",
-                details: ["Interest rate type", "Repayment schedule", "Collateral requirements", "Default & penalties"]
-              },
-              {
-                title: "Partnership Deeds",
-                description: "Profit sharing, roles, and dissolution terms.",
-                image: "/documents/partnership.png",
-                details: ["Capital contributions", "Profit/loss sharing", "Decision-making rights", "Exit & dissolution"]
-              },
-              {
-                title: "IP Agreements",
-                description: "Copyrights, trademarks, and ownership rights.",
-                image: "/documents/ip-agreement.png",
-                details: ["Ownership transfer", "License scope & limits", "Royalty terms", "Infringement remedies"]
-              },
-              {
-                title: "Consulting Contracts",
-                description: "Scope of work, hourly rates, and deliverables.",
-                image: "/documents/consulting.png",
-                details: ["Engagement scope", "Fee structure", "Intellectual property", "Confidentiality terms"]
-              },
-              {
-                title: "Privacy Policies",
-                description: "Data collection, user rights, and tracking terms.",
-                image: "/documents/privacy-policy.png",
-                details: ["Data collected types", "Third-party sharing", "User opt-out rights", "Retention periods"]
-              },
-              {
-                title: "Operating Agreements",
-                description: "Business ownership, roles, and voting rights.",
-                image: "/documents/operating-agreement.png",
-                details: ["Member responsibilities", "Voting procedures", "Profit distribution", "Amendment process"]
-              },
-              {
-                title: "SaaS Agreements",
-                description: "Service limits, data ownership, and SLAs.",
-                image: "/documents/saas-service.png",
-                details: ["Uptime guarantees", "Data portability", "Usage limitations", "Auto-renewal traps"]
-              },
-              {
-                title: "Real Estate Sale",
-                description: "Purchase terms, deadlines, and contingencies.",
-                image: "/documents/real-estate.png",
-                details: ["Purchase price terms", "Inspection deadlines", "Financing contingencies", "Closing conditions"]
-              },
-              {
-                title: "Wills & Trusts",
-                description: "Estate planning, beneficiaries, and authority.",
-                image: "/documents/will-trust.png",
-                details: ["Beneficiary details", "Asset distribution", "Executor powers", "Trust conditions"]
-              },
-              {
-                title: "Non-Compete Agreements",
-                description: "Restrictive covenants, duration, and scope.",
-                image: "/documents/non-compete.png",
-                details: ["Geographic restrictions", "Duration limits", "Industry scope", "Enforcement penalties"]
-              },
-              {
-                title: "Power of Attorney",
-                description: "Authority grants, limitations, and revocation.",
-                image: "/documents/power-of-attorney.png",
-                details: ["Powers granted", "Effective conditions", "Revocation process", "Agent limitations"]
-              },
-              {
-                title: "Vendor Contracts",
-                description: "Supply terms, pricing, and delivery schedules.",
-                image: "/documents/vendor-contract.png",
-                details: ["Pricing & discounts", "Delivery timelines", "Quality standards", "Dispute resolution"]
-              }
-            ].map((doc, i) => (
-              <motion.div
-                key={i}
-                className="flip-card h-48 sm:h-64 rounded-2xl"
-                initial={{ opacity: 1, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-              >
-                <div className="flip-card-inner">
-                  {/* FRONT */}
-                  <div className="flip-card-front">
-                    <Image
-                      src={doc.image}
-                      alt={doc.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      className="object-cover"
-                      priority={i < 4}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
-                      <h4 className="text-lg font-bold text-white mb-1">{doc.title}</h4>
-                      <p className="text-sm text-white/80 line-clamp-2">{doc.description}</p>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-16 px-4">
+                                <Link href="/upload" className="w-full sm:w-auto">
+                                    <motion.div 
+                                        className="relative group"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-orange-400 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                                        <button className="relative flex h-16 w-full sm:w-auto items-center justify-center rounded-full bg-primary px-10 text-base font-black text-white transition-all shadow-xl shadow-primary/25">
+                                            Analyze Your First Document
+                                            <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                        </button>
+                                    </motion.div>
+                                </Link>
+                                <Link
+                                    href="#how-it-works"
+                                    className="h-16 w-full sm:w-auto inline-flex items-center justify-center rounded-full border border-border bg-background/50 px-10 text-base font-bold text-foreground backdrop-blur-md transition-all hover:bg-muted hover:scale-105 active:scale-95"
+                                >
+                                    Experience the Demo
+                                </Link>
+                            </div>
+                        </motion.div>
                     </div>
-                  </div>
+                </section>
 
-                  {/* BACK */}
-                  <div className="flip-card-back flip-back-doc flex flex-col justify-center items-center p-5 text-center">
-                    <h4 className="text-base sm:text-lg font-bold mb-3">{doc.title}</h4>
-                    <ul className="space-y-1.5 text-left w-full px-2">
-                      {doc.details.map((detail, j) => (
-                        <li key={j} className="flex items-start gap-2 text-xs sm:text-sm">
-                          <span className="dot-accent mt-0.5 h-1.5 w-1.5 rounded-full shrink-0" />
-                          {detail}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                {/* Stats Counter Section */}
+                <StatsCounter />
+
+                {/* Features Section - Bento SaaS Style */}
+                <motion.section
+                    className="max-w-[1400px] mx-auto px-4 py-32 relative overflow-visible"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                >
+                    <div className="absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-primary/5 via-transparent to-transparent -z-10 pointer-events-none" />
+                    
+                    <div className="text-center mb-24 space-y-4">
+                        <motion.div 
+                            className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-4"
+                            initial={{ opacity: 0, y: 10 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            Proprietary Engine
+                        </motion.div>
+                        <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight">Your AI <span className="text-primary italic font-serif">Legal Guard</span></h2>
+                        <p className="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed font-medium">Complex tools for professionals, simplified for everyone.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 auto-rows-auto">
+                        {/* PRIMARY FEATURE - LARGE CARD */}
+                        <motion.div
+                            className="md:col-span-8 bg-card/40 dark:bg-white/[0.02] border border-border/40 rounded-[3rem] p-10 flex flex-col lg:flex-row gap-12 group overflow-hidden relative"
+                            initial={{ opacity: 0, x: -50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="absolute top-0 right-0 p-12 opacity-[0.03] dark:opacity-[0.05] scale-150 rotate-12 group-hover:scale-125 transition-all duration-700 pointer-events-none">
+                                <FileText className="h-64 w-64 text-primary" />
+                            </div>
+                            
+                            <div className="flex-1 space-y-8 relative z-10">
+                                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
+                                    <FileText className="h-7 w-7" />
+                                </div>
+                                <div>
+                                    <h3 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
+                                        Instant <br /><span className="text-primary italic font-serif">Intelligent Summary</span>
+                                    </h3>
+                                    <p className="text-muted-foreground text-lg max-w-sm leading-relaxed">
+                                        Our proprietary engine dissolves complex jargon, leaving only the <span className="text-foreground font-bold underline decoration-primary/30">pure strategic essence</span> of your contract.
+                                    </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    {["Clause Extraction", "Plain English", "Obligations", "Action Items"].map(t => (
+                                        <div key={t} className="flex items-center gap-2 group/item">
+                                            <div className="h-1 w-4 rounded-full bg-primary/20 group-hover/item:w-6 transition-all duration-300" />
+                                            <span className="text-xs font-black uppercase tracking-wider opacity-60 group-hover/item:opacity-100 group-hover/item:text-primary transition-all underline decoration-transparent group-hover/item:decoration-primary/30 underline-offset-4 font-mono">{t}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Interactive Transformation UI Mockup */}
+                            <div className="hidden lg:flex flex-col justify-center w-80 relative group/mockup">
+                                <div className="absolute inset-x-0 top-[-20%] bottom-[-20%] bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 -z-10" />
+                                
+                                <div className="space-y-6 relative">
+                                    {/* Raw Jargon Text Layer */}
+                                    <div className="bg-white/5 dark:bg-white/[0.02] border border-white/5 rounded-3xl p-6 backdrop-blur-sm relative overflow-hidden transition-all duration-700 group-hover:blur-[2px] group-hover:opacity-30 group-hover:scale-95">
+                                        <div className="flex gap-1.5 mb-4">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-slate-500/30" />
+                                            <div className="h-1.5 w-1.5 rounded-full bg-slate-500/30" />
+                                            <div className="h-1.5 w-1.5 rounded-full bg-slate-500/30" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="h-2 w-full bg-slate-500/10 rounded-full" />
+                                            <div className="h-2 w-[90%] bg-slate-500/10 rounded-full" />
+                                            <div className="h-2 w-[95%] bg-slate-500/10 rounded-full" />
+                                            <div className="h-2 w-[70%] bg-slate-500/10 rounded-full" />
+                                        </div>
+                                        <div className="mt-4 text-[9px] font-mono text-slate-500/60 leading-relaxed italic">
+                                            "Notwithstanding anything to the contrary in Clause 14.2.1, the Indemnifying Party shall hold harmless the Indemnified..."
+                                        </div>
+                                    </div>
+
+                                    {/* Scanning Neural Line */}
+                                    <motion.div 
+                                        className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent z-20 shadow-[0_0_15px_rgba(249,115,22,0.8)]"
+                                        animate={{ top: ['10%', '90%', '10%'] }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                    />
+
+                                    <div className="flex justify-center -my-3 group-hover:scale-110 transition-transform duration-500">
+                                        <motion.div 
+                                            className="bg-primary/20 p-2 rounded-full border border-primary/30 backdrop-blur-xl"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                                        >
+                                            <ArrowRight className="h-4 w-4 text-primary rotate-90" />
+                                        </motion.div>
+                                    </div>
+
+                                    {/* AI Result Layer - The "Decoded" Version */}
+                                    <motion.div 
+                                        className="bg-primary shadow-2xl shadow-primary/40 rounded-[2rem] p-6 border border-white/20 relative z-30 transform -rotate-1 group-hover:rotate-0 transition-all duration-500 group-hover:scale-110 group-hover:shadow-primary/60"
+                                        whileHover={{ y: -5 }}
+                                    >
+                                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                                            <ShieldCheck className="h-12 w-12 text-white" />
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-8 w-8 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md">
+                                                <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                                            </div>
+                                            <div className="h-2 w-24 bg-white/30 rounded-full" />
+                                        </div>
+                                        <p className="text-[13px] font-black text-white leading-[1.4] tracking-tight">
+                                            "You can cancel anytime without penalty. Full protection on data leaks included."
+                                        </p>
+                                        <div className="mt-4 flex gap-2">
+                                            <div className="px-2 py-0.5 rounded-md bg-white/10 text-[9px] font-black text-white/80 uppercase tracking-tighter border border-white/5">Verified Safe</div>
+                                            <div className="px-2 py-0.5 rounded-md bg-white/10 text-[9px] font-black text-white/80 uppercase tracking-tighter border border-white/5">Plain English</div>
+                                        </div>
+                                    </motion.div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* SECONDARY FEATURE - TALL CARD */}
+                        <motion.div
+                            className="md:col-span-4 bg-muted/40 border border-border/40 rounded-[3rem] p-10 flex flex-col justify-between group relative overflow-hidden"
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="space-y-6 relative z-10">
+                                <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                                    <ShieldCheck className="h-7 w-7" />
+                                </div>
+                                <h3 className="text-3xl font-black tracking-tight">Risk <br />Detector</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">AI-trained to identify hidden clauses, non-refundable deposits, and unfair liability terms before you sign.</p>
+                            </div>
+                            <div className="mt-12 bg-card/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 shadow-2xl">
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] font-black uppercase text-red-500 tracking-[0.2em]">Risk Detected</span>
+                                    <span className="text-[10px] bg-red-500/20 px-2 py-0.5 rounded text-red-500 font-bold">Severity: High</span>
+                                </div>
+                                <div className="h-2 w-full bg-red-500/10 rounded-full mb-3">
+                                    <div className="h-full w-[85%] bg-red-500 rounded-full" />
+                                </div>
+                                <p className="text-[11px] font-bold text-foreground italic">"Automatic renewal with 100% price hike..."</p>
+                            </div>
+                        </motion.div>
+
+                        {/* THIRD FEATURE - LONG CARD (SMART COMPARISON) */}
+                        <motion.div
+                            className="md:col-span-12 bg-background border-2 border-primary/10 rounded-[4rem] p-16 flex flex-col md:flex-row items-center gap-16 group relative overflow-hidden mt-12 shadow-2xl shadow-primary/5 border-dashed"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                        >
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
+                            <div className="relative h-80 w-full md:w-1/2 bg-muted/40 rounded-[3rem] border border-border/40 overflow-hidden shadow-inner flex items-center justify-center group/comparison bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent_70%)]">
+                                {/* Mockup of Document Comparison with real examples */}
+                                <div className="relative flex items-center justify-center scale-90 md:scale-110">
+                                    {/* Card 1: Rental Agreement (v1) */}
+                                    <motion.div 
+                                        className="absolute -translate-x-16 translate-y-6 rotate-[-15deg] w-32 h-44 bg-card border border-border rounded-xl shadow-2xl overflow-hidden opacity-60 group-hover/comparison:opacity-80 transition-opacity"
+                                        animate={{ x: [-64, -72, -64], y: [24, 18, 24] }}
+                                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                                    >
+                                        <Image 
+                                            src="/documents/rental-agreement.png" 
+                                            alt="Rental Agreement v1" 
+                                            fill 
+                                            className="object-cover opacity-50 grayscale"
+                                        />
+                                        <div className="absolute inset-0 bg-blue-500/5 mix-blend-overlay" />
+                                    </motion.div>
+
+                                    {/* Card 2: Employment Contract (v2) */}
+                                    <motion.div 
+                                        className="absolute translate-x-16 translate-y-4 rotate-[15deg] w-32 h-44 bg-card border border-border rounded-xl shadow-2xl overflow-hidden opacity-60 group-hover/comparison:opacity-80 transition-opacity"
+                                        animate={{ x: [64, 72, 64], y: [16, 22, 16] }}
+                                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                                    >
+                                        <Image 
+                                            src="/documents/employment-contract.png" 
+                                            alt="Employment Contract v1" 
+                                            fill 
+                                            className="object-cover opacity-50 grayscale"
+                                        />
+                                        <div className="absolute inset-0 bg-blue-500/5 mix-blend-overlay" />
+                                    </motion.div>
+
+                                    {/* Card 3: NDA Policy (Active Comparison Target) */}
+                                    <motion.div 
+                                        className="z-10 w-44 h-60 bg-card border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden group-hover/comparison:border-primary/40 transition-colors"
+                                        whileHover={{ scale: 1.05, rotate: -2 }}
+                                    >
+                                        <div className="relative w-full h-full p-1 bg-background/50">
+                                            <Image 
+                                                src="/documents/nda.png" 
+                                                alt="NDA Policy Final" 
+                                                fill 
+                                                className="object-cover"
+                                            />
+                                            {/* AI Scanning Overlay */}
+                                            <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
+                                            {/* Labels for "Realism" */}
+                                            <div className="absolute bottom-4 left-4 right-4 bg-background/90 backdrop-blur-md p-2 rounded-lg border border-border/50 text-[10px] font-bold tracking-wider text-primary uppercase text-center shadow-xl">
+                                                Comparing Version 4.2
+                                            </div>
+                                        </div>
+                                    </motion.div>
+
+                                    {/* Comparison Highlight Line (The "Diff" scanner) */}
+                                    <motion.div 
+                                        className="absolute z-20 left-1/2 top-[30%] -translate-x-1/2 h-1 w-0 bg-blue-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.8)]"
+                                        animate={{ 
+                                            width: ["0%", "90%", "0%"],
+                                            top: ["20%", "80%", "20%"] 
+                                        }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-1 space-y-8 relative z-20">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-xl shadow-blue-500/5 backdrop-blur-md transition-all duration-500 group-hover:scale-110 group-hover:bg-blue-500/20">
+                                        <Search className="h-8 w-8" />
+                                    </div>
+                                    <h3 className="text-5xl font-black tracking-tight leading-none group-hover:translate-x-1 transition-transform duration-500">Smart <span className="text-blue-500 italic font-serif">Comparison</span></h3>
+                                </div>
+                                <p className="text-muted-foreground text-lg">Upload multiple versions of a document to see exactly what changed in the fine print. No more hunting for edits.</p>
+                                <button className="text-sm font-black text-primary flex items-center gap-2 group/btn uppercase tracking-widest">
+                                    Explore Diff Engine <ChevronRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                </motion.section>
+
+                {/* Documents We Simplify Section */}
+                <motion.section
+                    className="w-full bg-muted/20 py-32 border-y border-border/40"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                >
+                    <div className="container mx-auto px-4">
+                        <div className="text-center mb-20 space-y-4">
+                            <h2 className="text-3xl md:text-5xl font-black tracking-tight">Documents We <span className="text-primary italic font-serif">Simplify</span></h2>
+                            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From lease agreements to complex SaaS terms, we've got you covered.</p>
+                        </div>
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            {DOCUMENT_LIST.map((doc, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="flip-card h-48 sm:h-64 rounded-2xl"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ delay: i * 0.08 }}
+                                >
+                                    <div className="flip-card-inner">
+                                        {/* FRONT */}
+                                        <div className="flip-card-front">
+                                            <Image
+                                                src={doc.image}
+                                                alt={doc.title}
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                className="object-cover"
+                                                priority={i < 4}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+                                                <h4 className="text-lg font-bold text-white mb-1">{doc.title}</h4>
+                                                <p className="text-sm text-white/80 line-clamp-2">{doc.description}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* BACK */}
+                                        <div className="flip-card-back flip-back-doc flex flex-col justify-center items-center p-5 text-center">
+                                            <h4 className="text-base sm:text-lg font-bold mb-3">{doc.title}</h4>
+                                            <ul className="space-y-1.5 text-left w-full px-2">
+                                                {doc.details.map((detail, j) => (
+                                                    <li key={j} className="flex items-start gap-2 text-xs sm:text-sm">
+                                                        <span className="dot-accent mt-0.5 h-1.5 w-1.5 rounded-full shrink-0" />
+                                                        {detail}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </motion.section>
+
+                {/* FAQ Section - Clean SaaS UI */}
+                <motion.section
+                    className="container mx-auto px-4 py-32"
+                    initial={{ opacity: 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true }}
+                >
+                    <div className="flex flex-col md:flex-row gap-16">
+                        <div className="md:w-1/3">
+                            <h2 className="text-4xl font-black mb-6 leading-tight">Your Questions, <br /><span className="text-primary italic">Answered.</span></h2>
+                            <p className="text-muted-foreground text-lg mb-8">Everything you need to know about LegalLens AI and our intelligent document engine.</p>
+                            <div className="p-8 rounded-[2rem] bg-muted/50 border border-border/40">
+                                <p className="text-sm font-bold mb-2">Still have questions?</p>
+                                <p className="text-xs text-muted-foreground mb-4 font-medium leading-relaxed">Our legal tech specialists are here to help you navigate the future of contracts.</p>
+                                <button className="text-xs font-black uppercase text-primary tracking-[0.2em]">Contact Support</button>
+                            </div>
+                        </div>
+                        <div className="md:w-2/3 space-y-4">
+                            {[
+                                {
+                                    q: "Is LegalLens AI a substitute for a lawyer?",
+                                    a: "No. LegalLens provides AI-powered summaries and risk detection for informational purposes only. It is a powerful tool to understand your documents, but always consult a qualified attorney for critical legal decisions."
+                                },
+                                {
+                                    q: "What types of documents can I upload?",
+                                    a: "We support PDF, DOCX, TXT, and image files. Our AI is capable of processing long-form contracts, small snippets, and even scanned documents via visual OCR."
+                                },
+                                {
+                                    q: "Is my document data stored or shared?",
+                                    a: "Privacy is our priority. Documents are processed in real-time and analysis results are private to your account. We never sell your data or use it to train public models without consent."
+                                },
+                                {
+                                    q: "How accurate is the AI analysis?",
+                                    a: "Powered by Gemini 1.5 Pro and Flash, our analysis is highly accurate for standard contract archetypes. It identifies critical terms with human-like semantic understanding."
+                                }
+                            ].map((faq, i) => (
+                                <FAQItem key={i} question={faq.q} answer={faq.a} index={i} />
+                            ))}
+                        </div>
+                    </div>
+                </motion.section>
+            </main>
+
+            <FeedbackSystem />
         </div>
-      </motion.section>
-
-      {/* FAQ Section */}
-      <motion.section
-        className="container mx-auto px-4 py-24"
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
-      >
-        <h2 className="mb-4 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Frequently Asked Questions
-        </h2>
-        <p className="mb-12 text-center text-muted-foreground max-w-xl mx-auto">
-          Quick answers to common questions about LegalLens AI
-        </p>
-
-        <div className="max-w-2xl mx-auto space-y-3">
-          {[
-            {
-              q: "Is LegalLens AI a substitute for a lawyer?",
-              a: "No. LegalLens provides AI-powered summaries and risk detection for informational purposes only. Always consult a qualified attorney for legal decisions."
-            },
-            {
-              q: "What types of documents can I upload?",
-              a: "We support PDF, DOCX, TXT, and image files (JPG/PNG). Even scanned documents and photos of contracts work — our AI can read them visually."
-            },
-            {
-              q: "Is my document data stored or shared?",
-              a: "Your uploaded documents are processed in real-time and never stored permanently. Analysis results are saved to your history, but original files are discarded after processing."
-            },
-            {
-              q: "How accurate is the AI analysis?",
-              a: "Our AI is powered by Google Gemini and provides high-quality analysis. However, like any AI, it may occasionally miss nuances. We recommend using it as a first pass before consulting a professional."
-            },
-            {
-              q: "Is LegalLens free to use?",
-              a: "Yes! LegalLens AI is currently free. You can upload documents, get analysis, compare contracts, and export reports at no cost."
-            },
-            {
-              q: "Can I analyze documents in other languages?",
-              a: "Yes! While documents should be uploaded in English, you can translate the analysis results into 10+ Indian languages including Hindi, Marathi, Tamil, Telugu, and more."
-            }
-          ].map((faq, i) => (
-            <FAQItem key={i} question={faq.q} answer={faq.a} index={i} />
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Feedback System Section */}
-      <FeedbackSystem />
-    </div>
-  );
+    );
 }

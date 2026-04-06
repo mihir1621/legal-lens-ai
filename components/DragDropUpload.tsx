@@ -21,7 +21,6 @@ export default function DragDropUpload() {
     const [step, setStep] = useState<ProcessingStep>('idle');
     const [previewText, setPreviewText] = useState<string | null>(null);
     const [isDemoLoading, setIsDemoLoading] = useState(false);
-    const [demoResult, setDemoResult] = useState<any>(null);
     const router = useRouter();
 
     const isUploading = step !== 'idle';
@@ -55,31 +54,43 @@ export default function DragDropUpload() {
     const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setText(e.target.value);
         setFile(null);
-        if (demoResult) setDemoResult(null);
     };
 
     const handleDemoAnalyze = async () => {
         if (!text.trim()) return;
         setIsDemoLoading(true);
-        setDemoResult(null);
 
         // Simulate realistic AI processing delay
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        setDemoResult({
-            caseSummary: "Potential breach of a residential lease agreement. The client reports that the landlord is withholding the security deposit (approx. ₹50,000) without providing an inspection report or itemized deductions list following the vacancy of the premises in good condition.",
-            relevantLaws: [
-                "The Model Tenancy Act, 2021 (Sections 11 & 12)",
-                "The Transfer of Property Act, 1882 (Section 108 - Rights and Liabilities of Lessor)",
-                "Indian Contract Act, 1872 (Section 73 - Compensation for loss or damage)"
-            ],
-            nextSteps: [
+        const dummyAnalysis = {
+            summary_simple: "Potential breach of a residential lease agreement regarding the withholding of a security deposit (₹50,000) without valid justification or an itemized list of deductions after vacating the premises.",
+            what_it_means: [
                 "Issue a formal Legal Notice to the landlord demanding the refund within 15 days.",
                 "Gather all move-out inspection evidence (videos, photos, and emails).",
                 "Prepare rent receipts and the original signed lease agreement for verification.",
                 "If unresolved, file a petition before the Rent Authority or the local Civil Court."
+            ],
+            key_clauses: [
+                { title: "Model Tenancy Act, 2021", explanation: "Governs security deposit returns; stipulates that the landlord must return the deposit within 1 month.", risk: "High" },
+                { title: "Transfer of Property Act, 1882", explanation: "Section 108: General obligations of lessors regarding return of security.", risk: "Medium" },
+                { title: "Indian Contract Act, 1872", explanation: "Section 73: Compensation for loss caused by a breach of contract.", risk: "Medium" }
+            ],
+            red_flags: [
+                { reason: "Absence of a move-out inspection report detected; landlord may claim damages unfairly.", severity: "High" },
+                { reason: "Failure to provide an itemized list of deductions is a direct violation of standard lease terms.", severity: "High" }
+            ],
+            documents_required: [
+                { name: "Signed Rent Agreement", purpose: "To confirm security deposit amount and terms of refund.", how_to_obtain: ["Locate your original signed copy."] },
+                { name: "Rent Receipts & Bank Statements", purpose: "To prove all payments were made in full.", how_to_obtain: ["Export transaction history from your banking app."] }
             ]
-        });
+        };
+
+        // Store the dummy data in localStorage so the Document Page can read it
+        localStorage.setItem("temp_analysis", JSON.stringify(dummyAnalysis));
+
+        // Redirect to the existing results view
+        router.push('/document/temp');
         setIsDemoLoading(false);
     };
 
@@ -334,93 +345,6 @@ export default function DragDropUpload() {
                                     {isDemoLoading ? "Analyzing Query..." : "Analyze Case"}
                                 </span>
                             </button>
-
-                            {/* Simulated Result Display */}
-                            <AnimatePresence>
-                                {demoResult && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 30 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className="mt-12 p-8 rounded-[2.5rem] bg-[#0c0c0e]/80 border border-primary/20 backdrop-blur-3xl shadow-3xl space-y-8 relative overflow-hidden group"
-                                    >
-                                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                            <ShieldCheck className="h-24 w-24 text-primary" />
-                                        </div>
-
-                                        <div className="flex items-center gap-4 border-b border-white/10 pb-6">
-                                            <div className="p-3 rounded-2xl bg-primary/20 text-primary">
-                                                <Zap className="h-6 w-6" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-2xl font-bold text-white tracking-tight">Strategy Report</h3>
-                                                <p className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">LegalLens AI Analysis</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-8">
-                                            <section className="space-y-3">
-                                                <h4 className="flex items-center gap-2 text-primary font-bold uppercase tracking-[0.15em] text-xs">
-                                                    <FileText className="h-4 w-4" /> Case Summary
-                                                </h4>
-                                                <div className="text-slate-300 leading-relaxed text-sm bg-white/5 p-5 rounded-2xl border border-white/5 font-medium">
-                                                    {demoResult.caseSummary}
-                                                </div>
-                                            </section>
-
-                                            <section className="space-y-3">
-                                                <h4 className="flex items-center gap-2 text-primary font-bold uppercase tracking-[0.15em] text-xs">
-                                                    <AlertCircle className="h-4 w-4" /> Relevant Laws
-                                                </h4>
-                                                <div className="grid gap-2">
-                                                    {demoResult.relevantLaws.map((law: string, i: number) => (
-                                                        <motion.div
-                                                            key={i}
-                                                            initial={{ opacity: 0, x: -10 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            transition={{ delay: 0.1 * i }}
-                                                            className="flex items-center gap-3 bg-white/5 p-4 rounded-xl border border-white/5 text-sm text-slate-300 hover:border-primary/20 transition-colors"
-                                                        >
-                                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                            {law}
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </section>
-
-                                            <section className="space-y-3">
-                                                <h4 className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-[0.15em] text-xs">
-                                                    <CheckCircle2 className="h-4 w-4" /> Recommended Next Steps
-                                                </h4>
-                                                <div className="grid gap-2">
-                                                    {demoResult.nextSteps.map((step: string, i: number) => (
-                                                        <motion.div
-                                                            key={i}
-                                                            initial={{ opacity: 0, x: -10 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            transition={{ delay: 0.3 + (0.1 * i) }}
-                                                            className="flex items-start gap-4 bg-emerald-500/5 p-5 rounded-xl border border-emerald-500/10 text-sm text-slate-300"
-                                                        >
-                                                            <span className="mt-0.5 h-6 w-6 flex items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-black shrink-0">
-                                                                {i + 1}
-                                                            </span>
-                                                            <span className="font-medium">{step}</span>
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </section>
-                                        </div>
-
-                                        <div className="pt-6 border-t border-white/10 flex justify-between items-center text-[9px] text-slate-500 font-black uppercase tracking-[0.3em]">
-                                            <span className="flex items-center gap-2">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                Live Analysis Verified
-                                            </span>
-                                            <span>FID: LL-DEMO-9921</span>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
                         </div>
                     </motion.div>
                 )}
