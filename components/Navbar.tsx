@@ -5,7 +5,7 @@ import { Scale, LogOut, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-import { ThemeToggle } from '@/components/ThemeToggle';
+// import { ThemeToggle } from '@/components/ThemeToggle';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -32,7 +32,7 @@ export default function Navbar() {
         }, 600);
     };
 
-    // Auth pages (Login/Signup): Clean navbar + Theme Toggle
+    // Auth pages (Login/Signup): Clean navbar 
     if (['/login', '/signup', '/forgot-password'].includes(pathname)) {
         return (
             <nav className="absolute top-0 z-50 w-full p-6 flex items-center justify-between">
@@ -40,9 +40,10 @@ export default function Navbar() {
                     <Scale className="h-6 w-6 text-primary" />
                     <span>LegalLens</span>
                 </Link>
-                <div className="z-50">
+                {/* Theme Toggle commented out for now */}
+                {/* <div className="z-50">
                     <ThemeToggle />
-                </div>
+                </div> */}
             </nav>
         );
     }
@@ -111,8 +112,8 @@ export default function Navbar() {
                         </>
                     )}
 
-                    {/* Theme Toggle - Always Last */}
-                    <ThemeToggle />
+                    {/* Theme Toggle - Commented out for light-only mode */}
+                    {/* <ThemeToggle /> */}
                 </div>
             </div>
         </nav>
