@@ -1,7 +1,7 @@
 'use client';
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database } from "lucide-react";
+import { ArrowRight, ShieldCheck, FileText, Search, Clock, ChevronRight, ChevronDown, Lock, ShieldAlert, Cpu, FolderX, Database, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -626,9 +626,9 @@ export default function Home() {
                                     bg: "bg-red-500/10"
                                 },
                                 {
-                                    icon: Lock,
-                                    title: "Bank-Grade Encryption",
-                                    desc: "Every document is protected with AES-256 bit encryption during transit, shielding your sensitive data from any prying eyes.",
+                                    icon: EyeOff,
+                                    title: "Privacy-Controlled Engine",
+                                    desc: "All document analysis happens within a secure, short-lived session. Once you're done, the session is digitally shredded, leaving zero digital footprints.",
                                     color: "text-blue-500",
                                     bg: "bg-blue-500/10"
                                 },
