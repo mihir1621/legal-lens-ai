@@ -6,11 +6,14 @@ import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestor
 import { motion } from 'framer-motion';
 import { 
     ThumbsUp, 
+    ThumbsDown,
     CheckCircle2, 
     XCircle, 
     Zap,
     Loader2,
-    Sparkles
+    Sparkles,
+    MessageSquare,
+    ChevronRight
 } from 'lucide-react';
 import { 
     PieChart as RePieChart, 
@@ -114,17 +117,18 @@ export default function AdminFeedbackPage() {
             <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-card rounded-[3.5rem] border border-border/40 shadow-sm overflow-hidden"
+                className="bg-card rounded-[3rem] border border-border/40 shadow-sm overflow-hidden"
             >
-                <div className="overflow-x-auto">
+                {/* Desktop view Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse font-sans">
                         <thead>
                             <tr className="border-b border-border/40 bg-muted/20">
-                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground w-[25%]">Originator</th>
-                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Liked Features</th>
+                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground w-[20%]">Originator</th>
+                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Liked</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Disliked</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Suggestions</th>
-                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center">Stat.</th>
+                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-center w-16">Stat.</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
@@ -147,18 +151,18 @@ export default function AdminFeedbackPage() {
                                 >
                                     <td className="px-8 py-8">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black tracking-tight truncate max-w-[200px]">{feedback.user}</span>
+                                            <span className="text-sm font-black tracking-tight truncate max-w-[150px]">{feedback.user}</span>
                                             <span className="text-[10px] text-muted-foreground font-mono uppercase font-black opacity-50 tracking-widest">{feedback.date}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-8">
                                         <div className={`flex items-center gap-2 font-bold px-3 py-1.5 rounded-xl text-[10px] w-fit ${feedback.liked !== 'None' ? 'text-blue-600 bg-blue-500/5' : 'text-muted-foreground/30 italic'}`}>
                                             <ThumbsUp className="h-3 w-3" />
-                                            {feedback.liked}
+                                            <span className="truncate max-w-[120px]">{feedback.liked}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-8">
-                                        <div className={`p-3 rounded-xl border border-destructive/10 text-[10px] text-muted-foreground font-medium max-w-[180px] leading-relaxed ${feedback.disliked === 'None' ? 'opacity-20 italic font-normal' : ''}`}>
+                                        <div className={`p-3 rounded-xl border border-destructive/10 text-[10px] text-muted-foreground font-medium max-w-[180px] leading-relaxed truncate ${feedback.disliked === 'None' ? 'opacity-20 italic font-normal' : ''}`}>
                                             {feedback.disliked}
                                         </div>
                                     </td>
@@ -185,6 +189,48 @@ export default function AdminFeedbackPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View Card List */}
+                <div className="md:hidden divide-y divide-border/20">
+                    {feedbacks.length === 0 ? (
+                         <div className="p-20 text-center flex flex-col items-center gap-2 opacity-30">
+                            <Sparkles className="h-8 w-8 text-primary mb-2" />
+                            <p className="text-xs font-black uppercase tracking-widest">Waiting for first voice...</p>
+                        </div>
+                    ) : feedbacks.map((feedback, i) => (
+                        <motion.div 
+                            key={feedback.id} 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="p-6 space-y-4"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-black tracking-tight truncate max-w-[200px]">{feedback.user}</span>
+                                    <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-widest">{feedback.date}</span>
+                                </div>
+                                {feedback.answered ? (
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                ) : (
+                                    <XCircle className="h-5 w-5 text-muted-foreground/30" />
+                                )}
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
+                                     <div className={`flex items-center gap-1.5 font-black px-2 py-1 rounded-lg text-[9px] ${feedback.rating === 'up' ? 'text-blue-600 bg-blue-500/5' : 'text-orange-600 bg-orange-500/5'}`}>
+                                        {feedback.rating === 'up' ? <ThumbsUp className="h-3 w-3" /> : <ThumbsDown className="h-3 w-3" />}
+                                        {feedback.rating === 'up' ? 'LIKED' : 'DISLIKED'}
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-muted/20 border border-border/40 rounded-2xl">
+                                    <p className="text-xs font-bold leading-relaxed">{feedback.suggestions}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </motion.div>
 

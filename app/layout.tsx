@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import ClientLayout from "@/components/layout/ClientLayout";
 import ScrollToTop from "@/components/ScrollToTop";
 import AuthProvider from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -41,11 +40,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <SidebarProvider>
-              <Navbar />
-              <main className="flex-1">
+              <ClientLayout>
                 {children}
-              </main>
-              <Footer />
+              </ClientLayout>
               <ScrollToTop />
             </SidebarProvider>
           </AuthProvider>

@@ -78,8 +78,9 @@ export default function Navbar() {
                 <div className="flex items-center gap-4 sm:gap-6">
                     {user ? (
                         <>
+                            {/* Desktop/Tablet Navigation */}
                             <motion.div
-                                className="flex items-center gap-4 sm:gap-6"
+                                className="hidden md:flex items-center gap-4 sm:gap-6"
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.5 }}
@@ -93,17 +94,17 @@ export default function Navbar() {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-4 sm:gap-6 mr-6 transition-all duration-500">
-                                        <Link href="/" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Home</Link>
-                                        <Link href="/upload" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/upload' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Analyze</Link>
-                                        <Link href="/history" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/history' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>History</Link>
-                                        <Link href="/compare" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/compare' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Compare</Link>
-                                        <Link href="/about" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/about' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>About</Link>
+                                        <Link href="/" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>Home</Link>
+                                        <Link href="/upload" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/upload' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>Analyze</Link>
+                                        <Link href="/history" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/history' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>History</Link>
+                                        <Link href="/compare" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/compare' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>Compare</Link>
+                                        <Link href="/about" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/about' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>About</Link>
                                     </div>
                                 )}
                                 
                                 <div className="flex items-center gap-4">
-                                    <div className="h-6 w-px bg-border/60 mx-1 hidden md:block" />
-                                    <span className="text-base font-bold hidden md:block">
+                                    <div className="h-6 w-px bg-border/60 mx-1" />
+                                    <span className="text-base font-bold">
                                         {user.displayName || user.email?.split('@')[0]}
                                     </span>
                                     <button
@@ -123,10 +124,23 @@ export default function Navbar() {
                                     </button>
                                 </div>
                             </motion.div>
+
+                            {/* Mobile Navigation Trigger */}
+                            <div className="flex md:hidden items-center gap-2">
+                                <span className="text-sm font-bold opacity-60 max-w-[80px] truncate">
+                                    {user.displayName || user.email?.split('@')[0]}
+                                </span>
+                                <button
+                                    onClick={toggle}
+                                    className="p-2 bg-primary/10 text-primary rounded-xl transition-all active:scale-95 border border-primary/20"
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </button>
+                            </div>
                         </>
                     ) : (
-                        <>
-                            <Link href="/login" className="text-sm font-bold hover:text-primary transition-colors">Login</Link>
+                        <div className="flex items-center gap-4">
+                            <Link href="/login" className="text-base font-bold hover:text-primary transition-colors">Login</Link>
                             <Link href="/signup">
                                 <motion.button
                                     className="rounded-full px-6 py-2 text-sm font-black transition-all flex items-center gap-2 bg-primary text-white shadow-lg shadow-primary/25"
@@ -136,7 +150,7 @@ export default function Navbar() {
                                     Sign Up
                                 </motion.button>
                             </Link>
-                        </>
+                        </div>
                     )}
 
                     {/* Theme Toggle - Commented out for light-only mode */}

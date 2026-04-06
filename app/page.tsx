@@ -228,8 +228,8 @@ export default function Home() {
                             exit={{ scale: 1.1, opacity: 0 }}
                             className="text-center z-10"
                         >
-                            <h1 className="text-5xl font-black tracking-tight mb-2">Welcome back,</h1>
-                            <span className="text-6xl text-primary font-black block">{userName}</span>
+                            <h1 className="text-2xl md:text-5xl font-black tracking-tight mb-2">Welcome back,</h1>
+                            <span className="text-3xl md:text-6xl text-primary font-black block truncate px-4">{userName}</span>
                         </motion.div>
                     </motion.div>
                 )}
@@ -316,7 +316,7 @@ export default function Home() {
                             Proprietary Engine
                         </motion.div>
                         <h2 className="text-4xl md:text-7xl font-black tracking-tighter leading-tight">Your AI <span className="text-primary italic font-serif">Legal Guard</span></h2>
-                        <p className="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed font-medium">Complex tools for professionals, simplified for everyone.</p>
+                        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-medium">Complex tools for professionals, simplified for everyone.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-12 auto-rows-auto">
@@ -336,10 +336,10 @@ export default function Home() {
                                     <FileText className="h-7 w-7" />
                                 </div>
                                 <div>
-                                    <h3 className="text-3xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
-                                        Instant <br /><span className="text-primary italic font-serif">Plain English Summary</span>
+                                    <h3 className="text-2xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
+                                        Instant <br className="hidden md:block" /><span className="text-primary italic font-serif">Plain English Summary</span>
                                     </h3>
-                                    <p className="text-muted-foreground text-lg max-w-sm leading-relaxed mb-4">
+                                    <p className="text-muted-foreground text-base md:text-lg max-w-sm leading-relaxed mb-4">
                                         Stop squinting at 50-page contracts. We turn long legal jargon into a <span className="text-foreground font-bold underline decoration-primary/30">2-minute read</span> so you know exactly what you're signing.
                                     </p>
                                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground italic leading-relaxed">

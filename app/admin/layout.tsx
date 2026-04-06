@@ -66,23 +66,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex relative font-sans overflow-hidden">
-            {/* The Sidebar Drawer */}
-            <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-            
-            <main className={`flex-1 min-h-screen relative overflow-y-auto transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'}`}>
-                <div className="p-4 md:p-8 pb-20 relative">
-                    {children}
-                </div>
-                
-                {/* Click-away sentinel: Clicking anywhere in this pushing main content will close the sidebar */}
-                {isSidebarOpen && (
-                    <div 
-                        className="absolute inset-0 z-[35] cursor-pointer"
-                        onClick={() => setIsSidebarOpen(false)}
-                    />
-                )}
-            </main>
+        <div className="flex-1 min-h-screen bg-background relative transition-all duration-500 ease-in-out">
+            <div className="p-4 md:p-8 pb-20 relative">
+                {children}
+            </div>
         </div>
     );
 }

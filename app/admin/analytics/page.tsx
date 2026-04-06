@@ -48,14 +48,14 @@ export default function AnalyticsPage() {
     return (
         <div className="space-y-12 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex items-end justify-between">
-                <div>
-                    <h1 className="text-4xl font-black tracking-tighter mb-2 italic font-serif">Platform <span className="text-primary not-italic font-sans">Growth</span></h1>
-                    <p className="text-muted-foreground font-medium uppercase tracking-[0.1em] text-xs">Deep performance analysis and engagement trends.</p>
+            <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6 px-4 md:px-0">
+                <div className="text-center md:text-left">
+                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-2 italic font-serif">Platform <span className="text-primary not-italic font-sans">Growth</span></h1>
+                    <p className="text-muted-foreground font-medium uppercase tracking-[0.1em] text-[10px] md:text-xs">Deep performance analysis and engagement trends.</p>
                 </div>
-                <div className="flex bg-card border border-border/40 p-1 rounded-2xl">
+                <div className="flex bg-card border border-border/40 p-1 rounded-2xl shadow-sm">
                     {['D', 'W', 'M', 'Y'].map((t) => (
-                        <button key={t} className={`px-4 py-2 text-[11px] font-black rounded-xl transition-all ${t === 'M' ? 'bg-primary text-white shadow-xl' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <button key={t} className={`px-4 md:px-6 py-2.5 text-[10px] md:text-[11px] font-black rounded-xl transition-all active:scale-95 ${t === 'M' ? 'bg-primary text-white shadow-xl' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
                             {t}
                         </button>
                     ))}

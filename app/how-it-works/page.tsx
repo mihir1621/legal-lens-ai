@@ -73,10 +73,10 @@ export default function HowItWorksPage() {
                             <Sparkles className="h-4 w-4" />
                             The Inner Workings
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9]">
+                        <h1 className="text-4xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9]">
                             Transparency <br />by <span className="text-primary italic font-serif">Design</span>
                         </h1>
-                        <p className="text-xl text-muted-foreground font-medium leading-relaxed">
+                        <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed px-4 md:px-0">
                             Most AI tools are 'black boxes'. At LegalLens, we believe you deserve to understand exactly how your legal intelligence is generated.
                         </p>
                     </motion.div>

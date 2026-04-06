@@ -63,16 +63,17 @@ export default function UsersActivityPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-card rounded-[3.5rem] border border-border/40 shadow-sm overflow-hidden"
             >
-                <div className="overflow-x-auto">
+                {/* Desktop View Table */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-border/40 bg-muted/20">
-                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">User Entity</th>
+                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground w-1/3 text-left">User Entity</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Intelligence Rank</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Session Velocity</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Analyses</th>
                                 <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Last Active</th>
-                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right">Actions</th>
+                                <th className="px-8 py-6 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground text-right w-16">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
@@ -130,6 +131,54 @@ export default function UsersActivityPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View Card List */}
+                <div className="md:hidden divide-y divide-border/20">
+                    {MOCK_USERS.map((user, i) => (
+                        <motion.div 
+                            key={user.id} 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="p-6 space-y-4"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black">
+                                        {user.email[0].toUpperCase()}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black tracking-tight line-clamp-1 max-w-[150px]">{user.email}</span>
+                                        <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-widest">ID: {user.id.padStart(4, '0')}</span>
+                                    </div>
+                                </div>
+                                {user.powerUser ? (
+                                    <Zap className="h-4 w-4 text-orange-500 fill-current" />
+                                ) : (
+                                    <Users className="h-4 w-4 text-blue-500" />
+                                )}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-muted/20 rounded-2xl">
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 leading-none">Velocity</p>
+                                    <p className="text-xs font-bold">{user.timeSpent}</p>
+                                </div>
+                                <div className="p-3 bg-muted/20 rounded-2xl">
+                                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1 leading-none">Docs Analyzed</p>
+                                    <p className="text-xs font-black">{user.analyses}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2">
+                                <span className="text-[10px] text-muted-foreground font-medium italic">Active {user.lastActive}</span>
+                                <button className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1">
+                                    View Full History <ChevronRight className="h-3 w-3" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
 
                 {/* Pagination Placeholder */}

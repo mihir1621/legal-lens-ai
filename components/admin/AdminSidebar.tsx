@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -11,24 +12,48 @@ import {
     ShieldCheck,
     Zap,
     X,
-    Layout
+    Layout,
+    Clock,
+    ChevronRight,
+    Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 
-const NAV_ITEMS = [
+const ADMIN_NAV_ITEMS = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
     { name: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
     { name: 'Users', icon: Users, href: '/admin/users' },
     { name: 'Feedback', icon: MessageSquare, href: '/admin/feedback' },
 ];
 
+const STANDARD_NAV_ITEMS = [
+    { name: 'Home', icon: Layout, href: '/' },
+    { name: 'Analyze', icon: Zap, href: '/upload' },
+    { name: 'History', icon: Clock, href: '/history' },
+    { name: 'Compare', icon: BarChart3, href: '/compare' },
+    { name: 'About', icon: ShieldCheck, href: '/about' },
+];
+
 export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
     const pathname = usePathname();
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((u) => {
+            setUser(u);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const isAdmin = user?.email === 'admin@gmail.com';
+    const isShowingAdminNav = isAdmin && pathname.startsWith('/admin');
+    const navItems = isShowingAdminNav ? ADMIN_NAV_ITEMS : STANDARD_NAV_ITEMS;
 
     const handleLogout = async () => {
         await signOut(auth);
+        onClose();
     };
 
     return (
@@ -41,7 +66,7 @@ export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onC
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] lg:hidden"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] lg:hidden"
                     />
 
                     <motion.aside 
@@ -52,25 +77,34 @@ export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onC
                         className="fixed left-0 top-0 h-screen w-72 bg-card border-r border-border/40 z-[60] flex flex-col p-6 shadow-2xl"
                     >
                         {/* Header */}
-                        <div className="flex items-center px-4 mb-12">
+                        <div className="flex items-center justify-between px-4 mb-12">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                                    <ShieldCheck className="h-6 w-6" />
+                                    {isShowingAdminNav ? <ShieldCheck className="h-6 w-6" /> : <ChevronRight className="h-6 w-6" />}
                                 </div>
                                 <div>
-                                    <h1 className="font-black tracking-tighter text-lg leading-none">Admin <span className="text-primary italic font-serif">Panel</span></h1>
-                                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">v2.0 Control Center</p>
+                                    <h1 className="font-black tracking-tighter text-lg leading-none">
+                                        {isShowingAdminNav ? 'Admin' : 'Legal'}<span className="text-primary italic font-serif ml-1">{isShowingAdminNav ? 'Panel' : 'Lens'}</span>
+                                    </h1>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">
+                                        {isShowingAdminNav ? 'v2.0 Control Center' : 'Global Intelligence'}
+                                    </p>
                                 </div>
                             </div>
+                            <button onClick={onClose} className="p-2 lg:hidden text-muted-foreground hover:text-primary transition-colors">
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
 
                         {/* Navigation */}
-                        <nav className="flex-1 space-y-2">
-                            <div className="px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">Main Menu</div>
-                            {NAV_ITEMS.map((item) => {
+                        <nav className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">
+                                {isShowingAdminNav ? 'Command Suite' : 'Main Menu'}
+                            </div>
+                            {navItems.map((item) => {
                                 const active = pathname === item.href;
                                 return (
-                                    <Link key={item.name} href={item.href}>
+                                    <Link key={item.name} href={item.href} onClick={() => onClose()}>
                                         <motion.div
                                             className={`group flex items-center gap-4 px-4 py-4 rounded-2xl transition-all relative ${
                                                 active 
@@ -93,16 +127,20 @@ export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onC
                                 );
                             })}
 
-                            <div className="mt-12 px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">Internal Ops</div>
-                            <Link href="/">
-                                <motion.div
-                                    className="group flex items-center gap-4 px-4 py-4 rounded-2xl transition-all text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                    whileHover={{ x: 8 }}
-                                >
-                                    <Zap className="h-5 w-5" />
-                                    <span className="text-sm font-bold">Return to Platform</span>
-                                </motion.div>
-                            </Link>
+                            {!isShowingAdminNav && isAdmin && (
+                                <>
+                                    <div className="mt-8 px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">Master Mode</div>
+                                    <Link href="/admin" onClick={() => onClose()}>
+                                        <motion.div
+                                            className="group flex items-center gap-4 px-4 py-4 rounded-2xl transition-all text-primary hover:bg-primary/10"
+                                            whileHover={{ x: 8 }}
+                                        >
+                                            <LayoutDashboard className="h-5 w-5" />
+                                            <span className="text-sm font-bold">Admin Dashboard</span>
+                                        </motion.div>
+                                    </Link>
+                                </>
+                            )}
                         </nav>
 
                         {/* Footer */}
@@ -117,7 +155,7 @@ export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onC
                             
                             <div className="mt-4 px-4 flex items-center gap-2">
                                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Operational</span>
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Secure session Active</span>
                             </div>
                         </div>
                     </motion.aside>
