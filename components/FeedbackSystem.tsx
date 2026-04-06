@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThumbsUp, ThumbsDown, Send, CheckCircle2, MessageSquare, Sparkles } from "lucide-react";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 interface FeedbackButtonProps {
     type: 'up' | 'down';
@@ -73,6 +75,7 @@ function FeedbackButton({ type, active, onClick }: FeedbackButtonProps) {
 export default function FeedbackSystem() {
     const [rating, setRating] = useState<'up' | 'down' | null>(null);
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [comment, setComment] = useState("");
     const [selectedImprovements, setSelectedImprovements] = useState<string[]>([]);
 
@@ -92,8 +95,27 @@ export default function FeedbackSystem() {
         }
     };
 
-    const handleSubmit = () => {
-        setSubmitted(true);
+    const handleSubmit = async () => {
+        if (!rating) return;
+        
+        setLoading(true);
+        try {
+            await addDoc(collection(db, "feedback"), {
+                user: auth.currentUser?.email || "Anonymous",
+                rating: rating,
+                liked: rating === 'up' ? selectedImprovements.join(', ') || "Product in general" : "None",
+                disliked: rating === 'down' ? selectedImprovements.join(', ') || "Unspecified" : "None",
+                suggestions: comment || "No specific comment",
+                answered: false,
+                timestamp: serverTimestamp(),
+                date: new Date().toLocaleDateString()
+            });
+            setSubmitted(true);
+        } catch (error) {
+            console.error("Error submitting feedback:", error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (submitted) {

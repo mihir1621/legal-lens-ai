@@ -34,6 +34,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-dropzone": "^14.4.0",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.4.0",
     "translatte": "^3.0.1"
   },

@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Scale, LogOut, User } from 'lucide-react';
+import { Scale, LogOut, Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
-// import { ThemeToggle } from '@/components/ThemeToggle';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSidebar } from '@/context/SidebarContext';
 
 export default function Navbar() {
+    const { toggle } = useSidebar();
     const [user, setUser] = useState<any>(null);
     const pathname = usePathname();
 
@@ -19,6 +20,8 @@ export default function Navbar() {
         });
         return () => unsubscribe();
     }, []);
+
+    const isAdmin = user?.email === 'admin@gmail.com';
 
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -36,14 +39,20 @@ export default function Navbar() {
     if (['/login', '/signup', '/forgot-password'].includes(pathname)) {
         return (
             <nav className="absolute top-0 z-50 w-full p-6 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
-                    <Scale className="h-6 w-6 text-primary" />
-                    <span>LegalLens</span>
-                </Link>
-                {/* Theme Toggle commented out for now */}
-                {/* <div className="z-50">
-                    <ThemeToggle />
-                </div> */}
+                <div className="flex items-center gap-4">
+                    {isAdmin && (
+                        <button 
+                            onClick={toggle}
+                            className="p-2 hover:bg-muted rounded-xl transition-colors"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                    )}
+                    <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground">
+                        <Scale className="h-6 w-6 text-primary" />
+                        <span>LegalLens</span>
+                    </Link>
+                </div>
             </nav>
         );
     }
@@ -51,10 +60,20 @@ export default function Navbar() {
     return (
         <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
-                <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:opacity-80 transition-opacity">
-                    <Scale className="h-6 w-6 text-primary" />
-                    <span>LegalLens</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                    {isAdmin && (
+                        <button 
+                            onClick={toggle}
+                            className="p-2 mr-2 hover:bg-muted rounded-xl transition-colors active:scale-95"
+                        >
+                            <Menu className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+                        </button>
+                    )}
+                    <Link href="/" className="flex items-center gap-2 text-xl font-bold text-foreground hover:opacity-80 transition-opacity">
+                        <Scale className="h-6 w-6 text-primary" />
+                        <span>LegalLens</span>
+                    </Link>
+                </div>
 
                 <div className="flex items-center gap-4 sm:gap-6">
                     {user ? (
@@ -65,16 +84,26 @@ export default function Navbar() {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <Link href="/" className="text-sm font-medium hover:text-primary transition-all hover:scale-105 active:scale-95 hidden sm:block">Home</Link>
-                                <Link href="/upload" className="text-sm font-medium hover:text-primary transition-all hover:scale-105 active:scale-95 hidden sm:block">Analyze</Link>
-                                <Link href="/history" className="text-sm font-medium hover:text-primary transition-all hover:scale-105 active:scale-95 hidden sm:block">History</Link>
-                                <Link href="/compare" className="text-sm font-medium hover:text-primary transition-all hover:scale-105 active:scale-95 hidden sm:block">Compare</Link>
-                                <Link href="/about" className="text-sm font-medium hover:text-primary transition-all hover:scale-105 active:scale-95 hidden sm:block">About</Link>
-
-                                <div className="h-6 w-px bg-border hidden sm:block" />
-
+                                {isAdmin && pathname.startsWith('/admin') ? (
+                                    <div className="flex items-center gap-4 sm:gap-6 mr-6 transition-all duration-500">
+                                        <Link href="/admin" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Dashboard</Link>
+                                        <Link href="/admin/analytics" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/analytics' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Analytics</Link>
+                                        <Link href="/admin/users" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/users' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Users</Link>
+                                        <Link href="/admin/feedback" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/feedback' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Feedback</Link>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 sm:gap-6 mr-6 transition-all duration-500">
+                                        <Link href="/" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Home</Link>
+                                        <Link href="/upload" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/upload' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Analyze</Link>
+                                        <Link href="/history" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/history' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>History</Link>
+                                        <Link href="/compare" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/compare' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>Compare</Link>
+                                        <Link href="/about" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/about' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95 hidden sm:block'}`}>About</Link>
+                                    </div>
+                                )}
+                                
                                 <div className="flex items-center gap-4">
-                                    <span className="text-sm font-medium hidden md:block">
+                                    <div className="h-6 w-px bg-border/60 mx-1 hidden md:block" />
+                                    <span className="text-base font-bold hidden md:block">
                                         {user.displayName || user.email?.split('@')[0]}
                                     </span>
                                     <button
@@ -97,7 +126,6 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors hidden sm:block mr-2">About</Link>
                             <Link href="/login" className="text-sm font-bold hover:text-primary transition-colors">Login</Link>
                             <Link href="/signup">
                                 <motion.button

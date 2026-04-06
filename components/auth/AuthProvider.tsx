@@ -27,9 +27,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     useEffect(() => {
         if (!loading) {
             if (!user && !PUBLIC_PATHS.includes(pathname)) {
+                // Redirect to global login for all protected routes, including admin
                 router.push('/login');
             } else if (user && AUTH_PATHS.includes(pathname)) {
-                router.push('/');
+                if (user.email === 'admin@gmail.com') {
+                    router.push('/admin');
+                } else {
+                    router.push('/');
+                }
             }
         }
     }, [user, loading, pathname, router]);

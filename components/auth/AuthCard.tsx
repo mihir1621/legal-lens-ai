@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Loader2, Chrome, Phone, ArrowLeft, Shield } from 'lucide-react';
+import { Mail, Lock, User, Loader2, Chrome, Phone, ArrowLeft, Shield, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { verifyRecaptcha } from '@/app/actions';
@@ -33,6 +33,7 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [name, setName] = useState('');
 
     // Phone Auth states
@@ -44,6 +45,14 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
 
     const router = useRouter();
 
+    const finalizeAuthSelection = (userEmail: string | null) => {
+        if (userEmail === 'admin@gmail.com') {
+            router.push('/admin');
+        } else {
+            router.push('/');
+        }
+    };
+
     // Cleanup reCAPTCHA on unmount
     useEffect(() => {
         // Handle redirect result for Google Login
@@ -51,7 +60,7 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
             try {
                 const result = await getRedirectResult(auth);
                 if (result) {
-                    router.push('/');
+                    finalizeAuthSelection(result.user.email);
                 }
             } catch (err: any) {
                 console.error("[Auth] Redirect Error:", err);
@@ -121,15 +130,47 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
             await runSafetyCheck(action);
 
             if (mode === 'signup') {
+                // BLOCK ADMIN SIGNUP: Identity protection for the master account
+                if (email.toLowerCase() === 'admin@gmail.com') {
+                    throw new Error('IDENTITY CONFLICT: The administrative identity is managed by the system. Please sign in instead.');
+                }
+                
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
+                finalizeAuthSelection(userCredential.user.email);
             } else {
-                await signInWithEmailAndPassword(auth, email, password);
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    finalizeAuthSelection(userCredential.user.email);
+                } catch (loginErr: any) {
+                    // ADMIN AUTO-PROVISIONING: If this is the admin account and it doesn't exist, create it
+                    if (email === 'admin@gmail.com' && (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential')) {
+                        console.warn("[Auth] Admin identity not found. Auto-provisioning master account...");
+                        try {
+                            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                            finalizeAuthSelection(userCredential.user.email);
+                            return;
+                        } catch (createErr: any) {
+                            console.error("[Auth] Admin provisioning failed:", createErr);
+                            throw createErr;
+                        }
+                    }
+                    throw loginErr;
+                }
             }
-            router.push('/');
         } catch (err: any) {
-            console.error("[Auth] Error:", err);
-            setError(err.message);
+            console.error("[Auth] Error:", err.code || err);
+            
+            // User-friendly error mapping
+            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                setError('Authentication failed. Please check your credentials and try again.');
+            } else if (err.code === 'auth/user-not-found') {
+                setError('No account found with this email. Please sign up first.');
+            } else if (err.code === 'auth/email-already-in-use') {
+                setError('This email is already registered. Please sign in instead.');
+            } else {
+                setError(err.message || 'An unexpected security event occurred. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -142,8 +183,8 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
             await runSafetyCheck('GOOGLE_LOGIN');
             const provider = new GoogleAuthProvider();
             try {
-                await signInWithPopup(auth, provider);
-                router.push('/');
+                const result = await signInWithPopup(auth, provider);
+                finalizeAuthSelection(result.user.email);
             } catch (popupErr: any) {
                 // FALLBACK: If popup is blocked, use redirect
                 if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
@@ -426,17 +467,24 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
                                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Password</label>
                                             {mode === 'login' && <button onClick={() => router.push('/forgot-password')} type="button" className="text-[10px] text-primary font-bold hover:underline">Forgot?</button>}
                                         </div>
-                                        <div className="relative group">
-                                            <Lock className="absolute left-4 top-4 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+                                        <div className="relative group/pass">
+                                            <Lock className="absolute left-4 top-4 h-4 w-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
                                             <input
-                                                type="password"
+                                                type={showPassword ? 'text' : 'password'}
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
                                                 placeholder="••••••••"
                                                 required
-                                                minLength={6}
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className={`absolute right-4 top-4 transition-all duration-300 ${showPassword ? 'text-primary scale-110' : 'text-slate-500 hover:text-white hover:scale-110'}`}
+                                                title={showPassword ? "Conceal Identity" : "Magnify Credentials"}
+                                            >
+                                                <Search className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
 

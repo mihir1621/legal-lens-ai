@@ -1,0 +1,128 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { 
+    LayoutDashboard, 
+    BarChart3, 
+    Users, 
+    MessageSquare, 
+    LogOut,
+    ShieldCheck,
+    Zap,
+    X,
+    Layout
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
+
+const NAV_ITEMS = [
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+    { name: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
+    { name: 'Users', icon: Users, href: '/admin/users' },
+    { name: 'Feedback', icon: MessageSquare, href: '/admin/feedback' },
+];
+
+export default function AdminSidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+    const pathname = usePathname();
+
+    const handleLogout = async () => {
+        await signOut(auth);
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop for mobile */}
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] lg:hidden"
+                    />
+
+                    <motion.aside 
+                        initial={{ x: '-100%', opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: '-100%', opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="fixed left-0 top-0 h-screen w-72 bg-card border-r border-border/40 z-[60] flex flex-col p-6 shadow-2xl"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center px-4 mb-12">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                                    <ShieldCheck className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h1 className="font-black tracking-tighter text-lg leading-none">Admin <span className="text-primary italic font-serif">Panel</span></h1>
+                                    <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mt-1">v2.0 Control Center</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Navigation */}
+                        <nav className="flex-1 space-y-2">
+                            <div className="px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">Main Menu</div>
+                            {NAV_ITEMS.map((item) => {
+                                const active = pathname === item.href;
+                                return (
+                                    <Link key={item.name} href={item.href}>
+                                        <motion.div
+                                            className={`group flex items-center gap-4 px-4 py-4 rounded-2xl transition-all relative ${
+                                                active 
+                                                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' 
+                                                    : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                                            }`}
+                                            whileHover={{ x: 8 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            {active && (
+                                                <motion.div 
+                                                    layoutId="sidebar-active-pill"
+                                                    className="absolute left-0 w-1 h-6 bg-primary rounded-full" 
+                                                />
+                                            )}
+                                            <item.icon className={`h-5 w-5 transition-transform duration-500 ${active ? 'scale-110' : 'group-hover:rotate-12'}`} />
+                                            <span className="text-sm font-bold">{item.name}</span>
+                                        </motion.div>
+                                    </Link>
+                                );
+                            })}
+
+                            <div className="mt-12 px-4 mb-4 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] opacity-50 font-mono">Internal Ops</div>
+                            <Link href="/">
+                                <motion.div
+                                    className="group flex items-center gap-4 px-4 py-4 rounded-2xl transition-all text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                    whileHover={{ x: 8 }}
+                                >
+                                    <Zap className="h-5 w-5" />
+                                    <span className="text-sm font-bold">Return to Platform</span>
+                                </motion.div>
+                            </Link>
+                        </nav>
+
+                        {/* Footer */}
+                        <div className="pt-6 border-t border-border/40 mt-auto">
+                            <button 
+                                onClick={handleLogout}
+                                className="flex items-center gap-4 px-4 py-4 w-full rounded-2xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all group"
+                            >
+                                <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+                                <span className="text-sm font-bold">Sign Out</span>
+                            </button>
+                            
+                            <div className="mt-4 px-4 flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Operational</span>
+                            </div>
+                        </div>
+                    </motion.aside>
+                </>
+            )}
+        </AnimatePresence>
+    );
+}

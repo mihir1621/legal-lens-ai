@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import AuthProvider from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SidebarProvider } from "@/context/SidebarContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="scroll-smooth">
+    <html lang="en" suppressHydrationWarning className="scroll-smooth font-sans">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
@@ -36,19 +37,17 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="light"
           forcedTheme="light"
-          /* 
-          defaultTheme="system"
-          enableSystem
-          */
           disableTransitionOnChange
         >
           <AuthProvider>
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-            <ScrollToTop />
+            <SidebarProvider>
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+              <ScrollToTop />
+            </SidebarProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
