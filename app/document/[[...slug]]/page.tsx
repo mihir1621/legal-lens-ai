@@ -527,103 +527,117 @@ export default function DocumentPage({ params }: { params: Promise<{ slug?: stri
                     </div>
 
                     <MagicBento className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
+                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
                             <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
-                                <h2 className="text-xl font-semibold flex items-center gap-2">
+                                <h2 className="text-xl font-black flex items-center gap-2 text-[#000000]">
                                     <Info className="text-primary h-5 w-5" />
                                     {labels.legal_summary}
                                 </h2>
                             </div>
-                            <div className="text-lg leading-relaxed text-card-foreground/90 min-h-[100px] whitespace-pre-wrap">
+                            <div className="text-lg leading-relaxed text-[#000000] min-h-[100px] whitespace-pre-wrap tracking-wide">
                                 {displayData.summary_simple}
                             </div>
                         </MagicCard>
 
-                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/10 p-6 shadow-sm">
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                                <CheckCircle className="h-5 w-5" />
+                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-2xl border border-emerald-500/40 bg-emerald-500/15 p-6 shadow-sm group transition-all">
+                            <h2 className="text-xl font-black mb-4 flex items-center gap-2 text-[#000000]">
+                                <CheckCircle className="h-5 w-5 text-emerald-600" />
                                 {labels.what_means}
                             </h2>
-                            <ul className="space-y-3">
+                            <ul className="space-y-4">
                                 {displayData.what_it_means?.map((point: string, i: number) => (
-                                    <li key={i} className="flex gap-3 text-sm">
-                                        <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                        <span className="text-emerald-900 dark:text-emerald-100 font-medium leading-relaxed whitespace-pre-wrap">{point}</span>
+                                    <li key={i} className="flex gap-3 text-lg group/item">
+                                        <div className="h-5 w-5 rounded-full bg-emerald-600/20 flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+                                            <Check className="h-3 w-3 text-emerald-700" />
+                                        </div>
+                                        <span className="text-[#000000] leading-relaxed whitespace-pre-wrap tracking-wide">{point}</span>
                                     </li>
                                 ))}
                             </ul>
                         </MagicCard>
 
-                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-2 rounded-xl border border-border/40 bg-card p-6 shadow-sm">
+                            <h2 className="text-xl font-black mb-4 flex items-center gap-2 text-[#000000]">
                                 <FileText className="text-primary h-5 w-5" />
                                 {labels.key_clauses}
                             </h2>
                             <div className="space-y-4">
                                 {displayData.key_clauses?.map((clause: any, i: number) => (
-                                    <div key={i} className="border-b last:border-0 border-border/50 pb-4 last:pb-0">
-                                        <div className="flex justify-between mb-1 items-center">
-                                            <h3 className="font-medium text-card-foreground">{clause.title}</h3>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ml-2 ${(clause.risk || 'low').toLowerCase() === 'high' ? 'bg-destructive/10 text-destructive' : (clause.risk || 'low').toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-green-500/10 text-green-600'}`}>
+                                    <div key={i} className="border-b last:border-0 border-border/30 pb-4 last:pb-0">
+                                        <div className="flex justify-between mb-2 items-center">
+                                            <h3 className="text-lg text-[#000000] tracking-tight font-medium">{clause.title}</h3>
+                                            <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase font-medium ml-2 shadow-sm ${(clause.risk || 'low').toLowerCase() === 'high' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : (clause.risk || 'low').toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'}`}>
                                                 {clause.risk || 'Low'} Risk
                                             </span>
                                         </div>
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{clause.explanation}</p>
+                                        <p className="text-lg text-[#000000] leading-relaxed whitespace-pre-wrap tracking-wide opacity-90">{clause.explanation}</p>
                                     </div>
                                 ))}
                             </div>
                         </MagicCard>
 
-                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 p-6 shadow-sm">
-                            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2 text-red-700 dark:text-red-400">
+                        <MagicCard enableTilt={false} className="col-span-full lg:col-span-1 rounded-xl border border-rose-500/20 bg-rose-500/5 p-6 shadow-sm group hover:border-rose-500/40 transition-colors">
+                            <h2 className="text-xl font-black mb-4 flex items-center gap-2 text-rose-600">
                                 <AlertTriangle className="h-5 w-5" />
                                 {labels.red_flags}
                             </h2>
                             <div className="space-y-4">
                                 {displayData.red_flags?.length > 0 ? (
                                     displayData.red_flags.map((flag: any, i: number) => (
-                                        <div key={i} className="p-3 bg-white dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <span className="font-semibold text-red-900 dark:text-red-200 text-sm whitespace-pre-wrap">
+                                        <div key={i} className="p-4 bg-background/50 rounded-xl border border-rose-500/10 shadow-sm hover:border-rose-500/20 transition-all">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-[#000000] text-lg leading-snug whitespace-pre-wrap font-medium">
                                                     {language === 'en' ? flag.reason : (flag.text || flag.reason)}
                                                 </span>
-                                                <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 ml-2 flex-shrink-0">
+                                                <span className="uppercase text-[9px] font-medium px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 ml-2 shrink-0 tracking-wider">
                                                     {flag.severity}
                                                 </span>
                                             </div>
-                                            {language !== 'en' && <p className="text-xs text-red-700/80 dark:text-red-300/80 mt-1 italic">"{flag.reason}"</p>}
+                                            {language !== 'en' && <p className="text-xs text-muted-foreground mt-1 italic">"{flag.reason}"</p>}
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-red-600/60 italic">No major red flags detected.</p>
+                                    <p className="text-lg text-muted-foreground italic flex items-center gap-3">
+                                        <CheckCircle className="h-5 w-5 text-emerald-500" />
+                                        No major red flags detected.
+                                    </p>
                                 )}
                             </div>
                         </MagicCard>
 
                         {displayData.documents_required?.length > 0 && (
-                            <MagicCard enableTilt={false} className="col-span-full rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/10 p-6 shadow-sm">
-                                <h2 className="text-xl font-semibold mb-5 flex items-center gap-2 text-blue-800 dark:text-blue-300">
-                                    <ClipboardList className="h-5 w-5" />
+                            <MagicCard enableTilt={false} className="col-span-full rounded-2xl border border-primary/20 bg-primary/5 p-8 shadow-sm">
+                                <h2 className="text-xl font-black mb-6 flex items-center gap-3 text-[#000000]">
+                                    <ClipboardList className="h-6 w-6 text-primary" />
                                     {labels.docs_required}
                                 </h2>
-                                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                     {displayData.documents_required.map((doc: any, i: number) => (
-                                        <div key={i} className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-white dark:bg-blue-950/30 p-4 shadow-sm flex flex-col gap-3">
-                                            <div className="flex items-start gap-2">
-                                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">{i + 1}</span>
-                                                <h3 className="font-bold text-blue-900 dark:text-blue-200 text-sm leading-snug">{doc.name}</h3>
+                                        <div key={i} className="rounded-2xl border border-border/40 bg-background/80 backdrop-blur-sm p-6 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 group">
+                                            <div className="flex items-start gap-4">
+                                                <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-medium ring-4 ring-primary/5 group-hover:bg-primary group-hover:text-white transition-all">
+                                                    {i + 1}
+                                                </div>
+                                                <h3 className="text-[#000000] text-lg leading-snug tracking-tight font-medium">{doc.name}</h3>
                                             </div>
-                                            {doc.purpose && <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-semibold">Purpose: <span className="font-normal">{doc.purpose}</span></p>}
+                                            
+                                            {doc.purpose && (
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#000000]/60">Purpose</p>
+                                                    <p className="text-lg text-[#000000] leading-relaxed tracking-wide">{doc.purpose}</p>
+                                                </div>
+                                            )}
+
                                             {doc.how_to_obtain?.length > 0 && (
-                                                <div className="mt-1 rounded-lg border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 p-3">
-                                                    <div className="flex items-center gap-1.5 mb-2">
-                                                        <BookOpen className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400" />
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">NOTE — How to Obtain</span>
+                                                <div className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-600">Action Plan</span>
                                                     </div>
-                                                    <ol className="space-y-1.5">
+                                                    <ol className="space-y-2">
                                                         {doc.how_to_obtain.map((step: string, j: number) => (
-                                                            <li key={j} className="flex gap-2 text-xs text-amber-900 dark:text-amber-200">
-                                                                <span className="shrink-0 font-bold text-amber-600 dark:text-amber-400">{j + 1}.</span>
+                                                            <li key={j} className="flex gap-2 text-lg text-[#000000] leading-relaxed tracking-wide">
+                                                                <span className="shrink-0 font-medium text-amber-600">{j + 1}.</span>
                                                                 <span>{step.replace(/^Step \d+:\s*/i, '')}</span>
                                                             </li>
                                                         ))}

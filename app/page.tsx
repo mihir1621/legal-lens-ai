@@ -267,17 +267,14 @@ export default function Home() {
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-16 px-4">
                                 <Link href="/upload" className="w-full sm:w-auto">
-                                    <motion.div 
-                                        className="relative group"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                    <motion.button 
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="group relative flex h-16 w-full sm:w-auto items-center justify-center rounded-full bg-primary px-10 text-base font-black text-white transition-all shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 border border-white/10"
                                     >
-                                        <div className="absolute -inset-1.5 bg-gradient-to-r from-primary via-orange-400 to-primary rounded-full blur-lg opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-                                        <button className="relative flex h-16 w-full sm:w-auto items-center justify-center rounded-full bg-gradient-to-r from-primary to-orange-500 px-10 text-base font-black text-white transition-all shadow-2xl shadow-primary/40 border border-white/20">
-                                            Analyze Your Case Now
-                                            <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-2" />
-                                        </button>
-                                    </motion.div>
+                                        Analyze Your Case Now
+                                        <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1.5" />
+                                    </motion.button>
                                 </Link>
                                 <Link href="/how-it-works" className="w-full sm:w-auto">
                                     <motion.button 

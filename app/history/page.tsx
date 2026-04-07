@@ -2,14 +2,43 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { FileText, Clock, ChevronRight, Loader2, Search } from 'lucide-react';
+import { 
+    FileText, 
+    Clock, 
+    ChevronRight, 
+    Loader2, 
+    Search,
+    ShieldCheck,
+    AlertCircle,
+    CheckCircle2,
+    History,
+    FileCheck,
+    ArrowUpRight
+} from 'lucide-react';
 import { db, auth } from '@/lib/firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { motion } from 'framer-motion';
 
+/**
+ * ACTIVITY HISTORY COMPONENT
+ * Refactored to represent a clean audit log of user interactions and document processing.
+ */
+
+interface ActivityItem {
+    id: string;
+    title: string;
+    type: string;
+    createdAt: any;
+    date: string;
+    time: string;
+    status: 'completed' | 'processing' | 'failed';
+    actionType: 'verification' | 'upload' | 'analysis' | 'comparison';
+    details: string;
+}
+
 export default function HistoryPage() {
-    const [history, setHistory] = useState<any[]>([]);
+    const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState<any>(null);
 
@@ -17,7 +46,7 @@ export default function HistoryPage() {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
             setUser(u);
             if (u) {
-                fetchHistory(u.uid);
+                fetchActivityLog(u.uid);
             } else {
                 setLoading(false);
             }
@@ -25,7 +54,7 @@ export default function HistoryPage() {
         return () => unsubscribe();
     }, []);
 
-    const fetchHistory = async (uid: string) => {
+    const fetchActivityLog = async (uid: string) => {
         try {
             const q = query(
                 collection(db, "documents"),
@@ -33,14 +62,25 @@ export default function HistoryPage() {
                 orderBy("createdAt", "desc")
             );
             const querySnapshot = await getDocs(q);
-            const docs = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                date: doc.data().createdAt?.toDate().toLocaleDateString() || 'Recently'
-            }));
-            setHistory(docs);
+            const logs = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                const dateObj = data.createdAt?.toDate() || new Date();
+                
+                return {
+                    id: doc.id,
+                    title: data.title || 'Untitled Document',
+                    type: data.type || 'Legal Document',
+                    createdAt: data.createdAt,
+                    date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                    status: 'completed', // All fetched documents are assumed processed/completed in this log
+                    actionType: 'verification', 
+                    details: `Successfully verified and scanned for critical clauses.`
+                } as ActivityItem;
+            });
+            setActivities(logs);
         } catch (err) {
-            console.error("Error fetching history:", err);
+            console.error("Error fetching activity log:", err);
         } finally {
             setLoading(false);
         }
@@ -48,27 +88,30 @@ export default function HistoryPage() {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                <p className="text-muted-foreground">Loading your analysis history...</p>
+            <div className="flex flex-col items-center justify-center min-h-[70vh] bg-[#050505] text-white">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-500 mb-6" />
+                <p className="text-gray-500 font-medium tracking-wide">Syncing your activity history...</p>
             </div>
         );
     }
 
     if (!user) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-                <Search className="h-12 w-12 text-muted-foreground mb-4" />
-                <h1 className="text-2xl font-bold mb-2">Please Login</h1>
-                <p className="text-muted-foreground mb-6">You need to be logged in to view your analysis history.</p>
+            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4 bg-[#050505] text-white">
+                <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6">
+                    <History className="h-10 w-10 text-gray-600" />
+                </div>
+                <h1 className="text-3xl font-black mb-3 tracking-tighter">Activity Vault Locked</h1>
+                <p className="text-gray-500 mb-8 max-w-sm mx-auto font-medium leading-relaxed">
+                    Please sign in to your LegalLens account to view your document interaction history.
+                </p>
                 <Link href="/login">
                     <motion.button
-                        className="rounded-full px-8 py-2 text-sm font-semibold transition-all shadow-md"
-                        style={{ background: '#f97316', color: '#ffffff' }}
-                        whileHover={{ scale: 1.05, boxShadow: "0 10px 15px rgba(249,115,22,0.3)" }}
-                        whileTap={{ scale: 0.95 }}
+                        className="rounded-2xl px-10 py-3 text-sm font-black transition-all shadow-xl bg-blue-600 text-white hover:bg-blue-500"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                     >
-                        Login to Continue
+                        Sign In Now
                     </motion.button>
                 </Link>
             </div>
@@ -76,100 +119,122 @@ export default function HistoryPage() {
     }
 
     return (
-        <motion.div
-            className="container mx-auto px-4 py-16 max-w-4xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold tracking-tight">Analysis History</h1>
-                <motion.span
-                    className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full font-medium"
-                    whileHover={{ scale: 1.05, backgroundColor: "var(--primary)", color: "#fff" }}
-                >
-                    {history.length} Documents
-                </motion.span>
-            </div>
-
-            {history.length === 0 ? (
-                <div className="text-center py-20 border-2 border-dashed border-border rounded-2xl bg-muted/10">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-medium mb-2">No documents yet</h3>
-                    <p className="text-muted-foreground mb-6">Start by uploading your first legal document for analysis.</p>
-                    <Link href="/upload">
-                        <motion.button
-                            className="rounded-full px-8 py-2.5 text-sm font-semibold shadow-lg"
-                            style={{ background: '#f97316', color: '#ffffff' }}
-                            whileHover={{ scale: 1.05, boxShadow: "0 10px 15px rgba(249, 115, 22, 0.4)" }}
-                            whileTap={{ scale: 0.95 }}
+        <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-sans pb-24">
+            <motion.div
+                className="container mx-auto px-4 pt-20 max-w-5xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+            >
+                {/* Header Implementation */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-white/5 pb-10">
+                    <div className="space-y-4">
+                        <motion.div 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black tracking-widest uppercase"
                         >
-                            Upload Document
-                        </motion.button>
-                    </Link>
-                </div>
-            ) : (
-                <motion.div
-                    className="space-y-4"
-                    variants={{
-                        hidden: { opacity: 0 },
-                        show: { opacity: 1, transition: { staggerChildren: 0.05 } }
-                    }}
-                    initial="hidden"
-                    animate="show"
-                >
-                    {history.map((item) => {
-                        const risk = item.analysis?.key_clauses?.find((c: any) => c.risk === 'High') ? 'High' :
-                            item.analysis?.key_clauses?.find((c: any) => c.risk === 'Medium') ? 'Medium' : 'Low';
+                            <History className="w-3" />
+                            Audit Trail
+                        </motion.div>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter">Activity Log</h1>
+                        <p className="text-gray-500 font-medium max-w-md">
+                            A complete record of your document verifications and system interactions.
+                        </p>
+                    </div>
 
-                        return (
+                    <div className="flex items-center gap-4">
+                        <div className="px-5 py-3 rounded-2xl bg-white/[0.03] border border-white/5 flex flex-col items-center">
+                            <span className="text-xs font-black text-gray-600 uppercase tracking-tighter">Total Events</span>
+                            <span className="text-2xl font-black text-white">{activities.length}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {activities.length === 0 ? (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-24 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01]"
+                    >
+                        <FileText className="h-16 w-16 text-gray-800 mx-auto mb-6" />
+                        <h3 className="text-2xl font-black text-gray-500 mb-2">No activities recorded</h3>
+                        <p className="text-gray-600 mb-10 max-w-xs mx-auto font-medium">Your activity history will appear here once you begin document verifications.</p>
+                        <Link href="/upload">
+                            <motion.button
+                                className="rounded-2xl px-8 py-3 text-sm font-black shadow-2xl bg-white text-black hover:bg-gray-200"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                Start First Scan
+                            </motion.button>
+                        </Link>
+                    </motion.div>
+                ) : (
+                    <div className="space-y-4">
+                        {activities.map((item, i) => (
                             <motion.div
                                 key={item.id}
-                                variants={{
-                                    hidden: { opacity: 0, x: -20 },
-                                    show: { opacity: 1, x: 0 }
-                                }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
                             >
                                 <Link
                                     href={`/document/${item.id}`}
-                                    className="flex items-center justify-between p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all group relative overflow-hidden"
+                                    className="group flex flex-col md:flex-row md:items-center justify-between p-6 rounded-3xl border border-white/5 bg-[#0a0a0a] hover:border-blue-500/30 hover:bg-[#0c0c0c] transition-all duration-300 relative overflow-hidden"
                                 >
-                                    <div className="absolute left-0 top-0 h-full w-1 bg-transparent group-hover:bg-primary transition-colors" />
-
-                                    <div className="flex items-center gap-5">
-                                        <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                                            <FileText className="h-6 w-6" />
+                                    {/* Item Content */}
+                                    <div className="flex items-start gap-5 relative z-10">
+                                        <div className="h-14 w-14 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-gray-500 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all duration-500 shrink-0">
+                                            <FileCheck className="h-7 w-7" />
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{item.title}</h3>
-                                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground font-medium">
-                                                <div className="flex items-center gap-1">
+                                        
+                                        <div className="space-y-1">
+                                            <div className="flex flex-wrap items-center gap-3">
+                                                <h3 className="font-black text-lg text-white group-hover:text-blue-400 transition-colors">
+                                                    {item.title}
+                                                </h3>
+                                                <span className="text-[10px] font-black bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1 border border-emerald-500/20">
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                    Verified
+                                                </span>
+                                            </div>
+                                            
+                                            <p className="text-sm text-gray-500 font-medium leading-relaxed max-w-lg">
+                                                {item.details}
+                                            </p>
+
+                                            <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-white/[0.03]">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-600 group-hover:text-gray-400 transition-colors">
                                                     <Clock className="h-3.5 w-3.5" />
-                                                    <span>{item.date}</span>
+                                                    {item.date} at {item.time}
                                                 </div>
-                                                <span>•</span>
-                                                <span className="capitalize">{item.type || 'Document'}</span>
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-600 group-hover:text-gray-400 transition-colors">
+                                                    <FileText className="h-3.5 w-3.5" />
+                                                    {item.type}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-6">
-                                        <motion.span
-                                            className={`text-[10px] uppercase tracking-wider px-3 py-1 rounded-full font-bold shadow-sm ${risk === 'High' ? 'bg-red-500/10 text-red-600' :
-                                                risk === 'Medium' ? 'bg-amber-500/10 text-amber-600' :
-                                                    'bg-emerald-500/10 text-emerald-600'
-                                                }`}
-                                            whileHover={{ scale: 1.1 }}
-                                        >
-                                            {risk} Risk
-                                        </motion.span>
-                                        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+
+                                    {/* Action Trigger */}
+                                    <div className="mt-6 md:mt-0 flex items-center justify-end md:justify-center gap-4 shrink-0">
+                                        <div className="hidden md:flex flex-col items-end mr-4 text-right">
+                                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">Category</span>
+                                            <span className="text-xs font-bold text-gray-500">Document Scan</span>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full border border-white/5 flex items-center justify-center text-gray-600 group-hover:border-blue-500/50 group-hover:text-blue-500 group-hover:bg-blue-500/5 transition-all">
+                                            <ArrowUpRight className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                        </div>
                                     </div>
+
+                                    {/* Subtle Ambient Background */}
+                                    <div className="absolute right-0 top-0 w-32 h-32 bg-blue-600/[0.02] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                                 </Link>
                             </motion.div>
-                        );
-                    })}
-                </motion.div>
-            )}
-        </motion.div>
+                        ))}
+                    </div>
+                )}
+            </motion.div>
+        </div>
     );
 }

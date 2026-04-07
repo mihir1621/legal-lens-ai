@@ -56,15 +56,34 @@ export default function Footer() {
                         </div>
                     </div>
                 </div>
-
-
             </div>
 
-            {/* Absolute bottom copyright */}
-            <div className="mt-20 py-10 border-t border-border/40 bg-muted/20 text-center">
-                <p className="text-[11px] text-foreground font-black font-mono tracking-[0.1em] uppercase">
-                    © {new Date().getFullYear()} LEGALLENS AI. BUILT FOR THE SECURE FUTURE OF LAW.
-                </p>
+            {/* Absolute bottom copyright & Warning Stack - CENTERED */}
+            <div className="pt-20 pb-0 border-t border-border/40 bg-muted/10 relative">
+                <div className="container mx-auto px-6 text-center space-y-8">
+                    {/* Integrated Footer Stack - ABSOLUTE FINAL POINT */}
+                    <div className="pt-2 pb-0 w-full space-y-6">
+                        <div className="text-center space-y-4">
+                            {/* Branded Red Header */}
+                            <div className="flex items-center justify-center gap-3">
+                                <Scale className="h-4 w-4 md:h-5 md:h-5 text-rose-500 shadow-sm" />
+                                <span className="text-rose-500 font-black uppercase tracking-[0.6em] text-[10px] md:text-sm">Warning</span>
+                            </div>
+
+                            {/* Single Line Detailed Disclaimer */}
+                            <p className="text-[9px] md:text-[10px] text-[#000000] leading-relaxed font-black max-w-4xl mx-auto uppercase tracking-wider px-6">
+                                ⚠️ This content is provided for <span className="underline decoration-primary underline-offset-[3px]">informational purposes only</span> and <span className="underline decoration-primary underline-offset-[3px]">may not be fully accurate</span>. It <span className="underline decoration-primary underline-offset-[3px]">does not constitute legal advice</span>. Please <span className="underline decoration-primary underline-offset-[3px]">consult a licensed legal professional</span> before relying on it.
+                            </p>
+
+                            {/* Integrated Copyright & Mission Line - ABSOLUTE EDGE */}
+                            <div className="pt-4 pb-0 max-w-2xl mx-auto">
+                                <p className="text-[9px] md:text-[10px] font-black font-mono tracking-widest uppercase bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent leading-none">
+                                    © {new Date().getFullYear()} LEGALLENS AI. • SIMPLIFYING LEGAL COMPLEXITY.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </footer>
     );
