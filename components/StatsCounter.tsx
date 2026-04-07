@@ -28,18 +28,20 @@ function StatItem({ value, suffixContent, label, icon: Icon, description, delay 
     );
 
     useEffect(() => {
+        let timer: any;
         if (isInView) {
-            setTimeout(() => {
+            timer = setTimeout(() => {
                 motionValue.set(value);
-            }, delay * 1000);
+            }, (delay || 0.1) * 1000);
         }
+        return () => clearTimeout(timer);
     }, [isInView, motionValue, value, delay]);
 
     const handleHover = () => {
         motionValue.set(0);
         setTimeout(() => {
             motionValue.set(value);
-        }, 20);
+        }, 50);
     };
 
     return (
@@ -47,13 +49,19 @@ function StatItem({ value, suffixContent, label, icon: Icon, description, delay 
             ref={ref}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
+            whileHover={{ 
+                scale: 1.08, 
+                y: -12,
+                transition: { type: "spring", stiffness: 400, damping: 10 } 
+            }}
             viewport={{ once: true }}
             onMouseEnter={handleHover}
             transition={{ duration: 0.6, delay: delay * 0.2 }}
-            className="relative group p-8 rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-md hover:bg-white/[0.05] cursor-default transition-all duration-500 overflow-hidden"
+            className="relative group p-8 rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl hover:bg-white/[0.06] cursor-default transition-all duration-500 overflow-hidden shadow-2xl hover:shadow-primary/20"
         >
-            {/* Decorative Gradient Glow */}
-            <div className="absolute -right-10 -top-10 h-32 w-32 bg-primary/20 blur-[60px] rounded-full group-hover:bg-primary/30 transition-colors duration-500" />
+            {/* Decorative Gradient Glow - Bubble Accent */}
+            <div className="absolute -right-10 -top-10 h-40 w-40 bg-primary/20 blur-[60px] rounded-full group-hover:bg-primary/40 group-hover:scale-150 transition-all duration-700" />
+            <div className="absolute -left-10 -bottom-10 h-24 w-24 bg-blue-500/10 blur-[40px] rounded-full group-hover:bg-blue-500/20 group-hover:scale-150 transition-all duration-700" />
 
             <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="mb-6 h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500">
@@ -82,17 +90,17 @@ function StatItem({ value, suffixContent, label, icon: Icon, description, delay 
 export default function StatsCounter() {
     const stats = [
         {
-            value: 500,
-            suffixContent: "+",
+            value: 10,
+            suffixContent: "K+",
             label: "Legal Documents",
-            description: "Successfully simplified with 99.8% semantic accuracy.",
+            description: "Successfully analyzed with 99.8% semantic accuracy.",
             icon: FileText,
             delay: 0.1
         },
         {
-            value: 5000,
-            suffixContent: "+",
-            label: "Clauses Analyzed",
+            value: 50,
+            suffixContent: "K+",
+            label: "Clauses Processed",
             description: "Deep-learning breakdown of complex legal obligations.",
             icon: BookOpen,
             delay: 0.3
@@ -100,7 +108,7 @@ export default function StatsCounter() {
         {
             value: 2500,
             suffixContent: "+",
-            label: "Risks Identified",
+            label: "Risks Detected",
             description: "Protecting users from hidden penalties and traps.",
             icon: ShieldAlert,
             delay: 0.5
@@ -108,8 +116,8 @@ export default function StatsCounter() {
         {
             value: 10,
             suffixContent: "s",
-            label: "Avg. Speed",
-            description: "Powered by Groq for near-instant legal intelligence.",
+            label: "Average Analysis Time",
+            description: "Powered by AI for near-instant legal intelligence.",
             icon: Zap,
             delay: 0.7
         }
