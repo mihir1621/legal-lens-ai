@@ -40,7 +40,7 @@ export default function AboutPage() {
                         Democratizing Legal <span className="text-primary italic inline-block">Intelligence</span>
                     </h1>
                     <p className="mx-auto max-w-2xl text-lg text-muted-foreground sm:text-xl leading-relaxed">
-                        LegalLens AI was built to bridge the gap between complex legal jargon and everyday understanding. We believe everyone deserves to know exactly what they are signing.
+                        LegalLens AI was built to bridge the gap between complex legal fine print and everyday understanding. We believe everyone deserves to know exactly what they are signing.
                     </p>
                 </motion.div>
             </section>

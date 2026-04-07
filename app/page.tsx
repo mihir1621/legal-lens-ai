@@ -262,7 +262,7 @@ export default function Home() {
                             <MagnifyingHeroHeading />
 
                             <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground sm:text-xl font-medium leading-relaxed">
-                                Don't let complex legal jargon hold you back. LegalLens AI transforms dense contracts into <span className="text-foreground font-bold underline decoration-primary/30 underline-offset-4 pointer-events-auto hover:text-primary transition-colors cursor-help">clear, actionable intelligence</span> in seconds.
+                                Don't let complex legalese hold you back. LegalLens AI transforms dense contracts into <span className="text-foreground font-bold underline decoration-primary/30 underline-offset-4 pointer-events-auto hover:text-primary transition-colors cursor-help">clear, actionable intelligence</span> in seconds.
                             </p>
 
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-16 px-4">
@@ -340,7 +340,7 @@ export default function Home() {
                                         Instant <br className="hidden md:block" /><span className="text-primary italic font-serif">Plain English Summary</span>
                                     </h3>
                                     <p className="text-muted-foreground text-base md:text-lg max-w-sm leading-relaxed mb-4">
-                                        Stop squinting at 50-page contracts. We turn long legal jargon into a <span className="text-foreground font-bold underline decoration-primary/30">2-minute read</span> so you know exactly what you're signing.
+                                        Stop squinting at 50-page contracts. We turn dense legal terminology into a <span className="text-foreground font-bold underline decoration-primary/30">2-minute read</span> so you know exactly what you're signing.
                                     </p>
                                     <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground italic leading-relaxed">
                                         <strong className="text-primary not-italic">Example:</strong> Reading the CliffNotes of a 30-page rental lease to instantly find out if pets are actually allowed.
@@ -362,7 +362,7 @@ export default function Home() {
                                 <div className="absolute inset-x-0 top-[-20%] bottom-[-20%] bg-gradient-to-r from-primary/10 via-transparent to-primary/10 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 -z-10" />
                                 
                                 <div className="space-y-6 relative">
-                                    {/* Raw Jargon Text Layer */}
+                                    {/* Raw Legalese Text Layer */}
                                     <div className="bg-white/5 dark:bg-white/[0.02] border border-white/5 rounded-3xl p-6 backdrop-blur-sm relative overflow-hidden transition-all duration-700 group-hover:blur-[2px] group-hover:opacity-30 group-hover:scale-95">
                                         <div className="flex gap-1.5 mb-4">
                                             <div className="h-1.5 w-1.5 rounded-full bg-slate-500/30" />
@@ -525,11 +525,11 @@ export default function Home() {
                                 </div>
                             </div>
                             <div className="flex-1 space-y-10 relative z-20 flex flex-col justify-center">
-                                <div className="flex items-center gap-6">
-                                    <div className="h-16 w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-xl shadow-blue-500/5 backdrop-blur-md transition-all duration-500 group-hover:scale-110 group-hover:bg-blue-500/20">
-                                        <Search className="h-8 w-8" />
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                                    <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20 shadow-xl shadow-blue-500/5 backdrop-blur-md transition-all duration-500 group-hover:scale-110 group-hover:bg-blue-500/20 shrink-0">
+                                        <Search className="h-7 w-7 sm:h-8 sm:w-8" />
                                     </div>
-                                    <h3 className="text-5xl font-black tracking-tight leading-none group-hover:translate-x-1 transition-transform duration-500">Document <span className="text-blue-500 italic font-serif">Comparison</span></h3>
+                                    <h3 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none group-hover:translate-x-1 transition-transform duration-500">Document <span className="text-blue-500 italic font-serif">Comparison</span></h3>
                                 </div>
                                 <p className="text-muted-foreground text-lg leading-relaxed">Instantly see every single word that changed between two versions of a contract. We highlight exactly what was added, removed, or "sneaked in."</p>
                                 <div className="p-5 rounded-2xl bg-blue-500/5 border border-blue-500/10 text-sm text-muted-foreground italic leading-relaxed max-w-lg">

@@ -64,7 +64,7 @@ export default function Navbar() {
                     {isAdmin && (
                         <button 
                             onClick={toggle}
-                            className="p-2 mr-2 hover:bg-muted rounded-xl transition-colors active:scale-95"
+                            className="hidden md:inline-flex p-2 mr-2 hover:bg-muted rounded-xl transition-colors active:scale-95"
                         >
                             <Menu className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
                         </button>
