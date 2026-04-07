@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Scale, Plus, ArrowRight, ShieldCheck, FileText, Loader2, Search, Zap, X, Upload, AlertTriangle, CheckCircle2, ArrowLeftRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Scale, Plus, ArrowRight, ShieldCheck, FileText, Loader2, Search, Zap, X, Upload, AlertTriangle, CheckCircle2, ArrowLeftRight, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight, Minus, PencilLine } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { extractTextFromFile } from '@/app/actions';
+import { compareLegalDocs } from '@/lib/compare';
 
 type ComparisonResult = {
     summary: string;
@@ -144,73 +145,82 @@ function ChangeTypeBadge({ type }: { type: string }) {
 export default function ComparePage() {
     const [fileA, setFileA] = useState<File | null>(null);
     const [fileB, setFileB] = useState<File | null>(null);
+    const [textA, setTextA] = useState('');
+    const [textB, setTextB] = useState('');
+    const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
     const [step, setStep] = useState<ProcessingStep>('idle');
     const [result, setResult] = useState<ComparisonResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [expandedChange, setExpandedChange] = useState<number | null>(null);
 
     const isProcessing = step !== 'idle' && step !== 'done';
+    const canCompare = inputMode === 'file' ? (fileA && fileB) : (textA.trim() && textB.trim());
 
     const handleCompare = async () => {
-        if (!fileA || !fileB) return;
+        if (!canCompare) return;
         setError(null);
         setResult(null);
         setStep('extracting');
 
         try {
-            // Step 1: Extract text from both documents in parallel
-            const formDataA = new FormData();
-            formDataA.append('file', fileA);
-            const formDataB = new FormData();
-            formDataB.append('file', fileB);
+            let finalTextA = '';
+            let finalTextB = '';
+            let nameA = 'Document A';
+            let nameB = 'Document B';
 
-            const [extractA, extractB] = await Promise.all([
-                extractTextFromFile(formDataA),
-                extractTextFromFile(formDataB)
-            ]);
+            if (inputMode === 'text') {
+                finalTextA = textA.trim();
+                finalTextB = textB.trim();
+                nameA = 'Original Text';
+                nameB = 'Revised Text';
+            } else {
+                const formDataA = new FormData();
+                formDataA.append('file', fileA!);
+                const formDataB = new FormData();
+                formDataB.append('file', fileB!);
 
-            if (extractA.error || !extractA.text) {
-                throw new Error(`Failed to read "${fileA.name}": ${extractA.error || 'Empty document'}`);
-            }
-            if (extractB.error || !extractB.text) {
-                throw new Error(`Failed to read "${fileB.name}": ${extractB.error || 'Empty document'}`);
-            }
+                const [extractA, extractB] = await Promise.all([
+                    extractTextFromFile(formDataA),
+                    extractTextFromFile(formDataB)
+                ]);
 
-            // Vision mode documents can't be compared via text
-            if (extractA.text.startsWith('IMAGE_DATA:') || extractB.text.startsWith('IMAGE_DATA:')) {
-                throw new Error("Scanned/image documents cannot be compared yet. Please upload text-based PDFs or DOCX files.");
+                if (extractA.error || !extractA.text) {
+                    throw new Error(`Failed to read "${fileA!.name}": ${extractA.error || 'Empty document'}`);
+                }
+                if (extractB.error || !extractB.text) {
+                    throw new Error(`Failed to read "${fileB!.name}": ${extractB.error || 'Empty document'}`);
+                }
+
+                finalTextA = extractA.text;
+                finalTextB = extractB.text;
+                nameA = fileA!.name;
+                nameB = fileB!.name;
             }
 
             setStep('comparing');
 
-            // Step 2: Send to comparison API
-            const response = await fetch('/api/compare', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    textA: extractA.text,
-                    textB: extractB.text,
-                    fileNameA: fileA.name,
-                    fileNameB: fileB.name
-                })
-            });
+            const data = await compareLegalDocs(
+                finalTextA,
+                finalTextB,
+                nameA,
+                nameB
+            );
 
-            const data = await response.json();
+            const resultData = data as any;
 
-            if (data.error) {
-                throw new Error(data.error);
+            if (resultData.error) {
+                throw new Error(resultData.error);
             }
 
-            if (!data.result) {
-                throw new Error("Invalid comparison response.");
+            if (!resultData.summary && !resultData.result) {
+                throw new Error("Failed to generate comparison result.");
             }
 
-            setResult(data.result);
+            setResult(resultData.result || resultData);
             setStep('done');
-
         } catch (err: any) {
-            console.error("[Compare] Error:", err);
-            setError(err.message || "Comparison failed. Please try again.");
+            console.error("Comparison error:", err);
+            setError(err.message || "An unexpected error occurred during comparison.");
             setStep('idle');
         }
     };
@@ -218,6 +228,8 @@ export default function ComparePage() {
     const handleReset = () => {
         setFileA(null);
         setFileB(null);
+        setTextA('');
+        setTextB('');
         setResult(null);
         setError(null);
         setStep('idle');
@@ -453,28 +465,99 @@ export default function ComparePage() {
                             </motion.div>
                         )}
 
-                        {/* Upload Cards */}
-                        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto relative px-4">
-                            {/* VS Badge */}
-                            <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background border-4 border-border items-center justify-center font-black text-primary shadow-lg">
-                                VS
+                        {/* Input Mode Toggle */}
+                        <div className="flex justify-center">
+                            <div className="inline-flex rounded-2xl border border-border/40 bg-card p-1 gap-1">
+                                <button
+                                    onClick={() => setInputMode('file')}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                        inputMode === 'file'
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    Upload Files
+                                </button>
+                                <button
+                                    onClick={() => setInputMode('text')}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                        inputMode === 'text'
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    <PencilLine className="h-4 w-4" />
+                                    Paste Text
+                                </button>
                             </div>
-
-                            <FileDropZone
-                                label="Original Contract"
-                                sublabel="Base version for comparison"
-                                file={fileA}
-                                onFile={setFileA}
-                                disabled={isProcessing}
-                            />
-                            <FileDropZone
-                                label="Revised Version"
-                                sublabel="Modified or updated version"
-                                file={fileB}
-                                onFile={setFileB}
-                                disabled={isProcessing}
-                            />
                         </div>
+
+                        {inputMode === 'file' ? (
+                            /* File Upload Cards */
+                            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto relative px-4">
+                                {/* VS Badge */}
+                                <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background border-4 border-border items-center justify-center font-black text-primary shadow-lg">
+                                    VS
+                                </div>
+
+                                <FileDropZone
+                                    label="Original Contract"
+                                    sublabel="Base version for comparison"
+                                    file={fileA}
+                                    onFile={setFileA}
+                                    disabled={isProcessing}
+                                />
+                                <FileDropZone
+                                    label="Revised Version"
+                                    sublabel="Modified or updated version"
+                                    file={fileB}
+                                    onFile={setFileB}
+                                    disabled={isProcessing}
+                                />
+                            </div>
+                        ) : (
+                            /* Text Input Mode */
+                            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto relative px-4">
+                                {/* VS Badge */}
+                                <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full bg-background border-4 border-border items-center justify-center font-black text-primary shadow-lg">
+                                    VS
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-primary" />
+                                        Original Text
+                                    </label>
+                                    <textarea
+                                        value={textA}
+                                        onChange={(e) => setTextA(e.target.value)}
+                                        disabled={isProcessing}
+                                        placeholder="Paste the original contract text here..."
+                                        className="w-full min-h-[280px] p-5 rounded-2xl border border-border/40 bg-card text-foreground text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50 disabled:opacity-50"
+                                    />
+                                    {textA.trim() && (
+                                        <p className="text-xs text-muted-foreground">{textA.trim().length} characters</p>
+                                    )}
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-blue-500" />
+                                        Revised Text
+                                    </label>
+                                    <textarea
+                                        value={textB}
+                                        onChange={(e) => setTextB(e.target.value)}
+                                        disabled={isProcessing}
+                                        placeholder="Paste the revised/updated contract text here..."
+                                        className="w-full min-h-[280px] p-5 rounded-2xl border border-border/40 bg-card text-foreground text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50 disabled:opacity-50"
+                                    />
+                                    {textB.trim() && (
+                                        <p className="text-xs text-muted-foreground">{textB.trim().length} characters</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Processing State */}
                         {isProcessing && (
@@ -492,7 +575,9 @@ export default function ComparePage() {
                                             {step === 'extracting' ? 'Reading Documents...' : 'AI Comparison Running...'}
                                         </h3>
                                         <p className="text-sm text-muted-foreground mt-1">
-                                            {step === 'extracting' ? 'Extracting text from both files simultaneously.' : 'Analyzing clause differences, risk variance, and legal impact.'}
+                                            {step === 'extracting'
+                                                ? inputMode === 'text' ? 'Processing text input...' : 'Extracting text from both files simultaneously.'
+                                                : 'Analyzing clause differences, risk variance, and legal impact.'}
                                         </p>
                                         <div className="flex gap-1.5 mt-3">
                                             <div className={`h-1.5 rounded-full transition-all duration-500 ${step === 'extracting' ? 'bg-primary w-12' : 'bg-emerald-500 w-8'}`} />
@@ -507,9 +592,9 @@ export default function ComparePage() {
                         <div className="flex justify-center">
                             <motion.button
                                 onClick={handleCompare}
-                                disabled={!fileA || !fileB || isProcessing}
-                                whileHover={fileA && fileB && !isProcessing ? { scale: 1.05, boxShadow: "0 10px 30px rgba(249,115,22,0.4)" } : {}}
-                                whileTap={fileA && fileB && !isProcessing ? { scale: 0.95 } : {}}
+                                disabled={!canCompare || isProcessing}
+                                whileHover={canCompare && !isProcessing ? { scale: 1.05, boxShadow: "0 10px 30px rgba(249,115,22,0.4)" } : {}}
+                                whileTap={canCompare && !isProcessing ? { scale: 0.95 } : {}}
                                 className="rounded-full px-12 py-4 text-base font-black bg-gradient-to-r from-primary to-orange-500 text-white shadow-2xl shadow-primary/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-3 border border-white/20"
                             >
                                 {isProcessing ? (
