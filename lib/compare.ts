@@ -38,17 +38,14 @@ export async function compareLegalDocs(case1: string, case2: string, name1: stri
             ""
         ).replace(/["']/g, "").trim();
 
-        const userPrompt = `Compare these two items.
-Name 1: ${name1}
-Content 1: ${case1.substring(0, 5000)}
-
-Name 2: ${name2}
-Content 2: ${case2.substring(0, 5000)}`;
+        const userPrompt = `Compare these items. BE EXTREMELY CONCISE.
+Name 1: ${name1} | Content 1: ${case1.substring(0, 3000)}
+Name 2: ${name2} | Content 2: ${case2.substring(0, 3000)}`;
 
         let winner: any = null;
         const failures: string[] = [];
 
-        // --- 1. PRIMARY: GEMINI 1.5 PRO (Strict & Reliable) ---
+        // --- 1. PRIMARY: GEMINI 1.5 PRO ---
         if (googleKey) {
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${googleKey}`, {
@@ -56,7 +53,7 @@ Content 2: ${case2.substring(0, 5000)}`;
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\n${userPrompt}` }] }],
-                        generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+                        generationConfig: { temperature: 0.1, maxOutputTokens: 300 }
                     }),
                     signal: AbortSignal.timeout(25000)
                 });
@@ -74,18 +71,22 @@ Content 2: ${case2.substring(0, 5000)}`;
             }
         }
 
-        // --- 2. FALLBACK: OPENROUTER (Sequential Resilience) ---
+        // --- 2. FALLBACK: OPENROUTER (Extreme Low-Credit Mode) ---
         if (!winner && orKey) {
             const client = new OpenAI({ apiKey: orKey, baseURL: 'https://openrouter.ai/api/v1' });
-            // DeepSeek is highly recommended for structured JSON
-            const models = ["deepseek/deepseek-chat", "google/gemini-2.0-flash-001", "meta-llama/llama-3.3-70b-instruct"];
+            // Prioritize :free models that don't need credits
+            const models = [
+                "google/gemini-2.0-flash-exp:free",
+                "mistralai/mistral-7b-instruct:free",
+                "google/gemini-2.0-flash-lite-preview-02-05:free"
+            ];
 
             for (const model of models) {
                 try {
                     const completion = await client.chat.completions.create({
                         model,
-                        max_tokens: 1000,
-                        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userPrompt }]
+                        max_tokens: 250, // Ultra-low to fit in free "affordability" window
+                        messages: [{ role: "system", content: `${SYSTEM_PROMPT} BE EXTREMELY CONCISE.` }, { role: "user", content: userPrompt }]
                     }, { timeout: 30000 });
 
                     let raw = completion.choices?.[0]?.message?.content || "";
@@ -93,7 +94,7 @@ Content 2: ${case2.substring(0, 5000)}`;
                     winner = JSON.parse(raw);
                     if (winner) break;
                 } catch (e: any) {
-                    failures.push(`${model}: ${e.message}`);
+                    failures.push(`${model.split('/').pop()}: ${e.message}`);
                 }
             }
         }
