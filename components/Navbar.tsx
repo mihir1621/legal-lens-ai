@@ -98,6 +98,27 @@ export default function Navbar() {
                                         <Link href="/upload" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/upload' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>Analyze</Link>
                                         <Link href="/history" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/history' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>History</Link>
                                         <Link href="/compare" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/compare' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>Compare</Link>
+                                        <Link 
+                                            href={pathname === '/' ? "#pricing" : "/pricing"} 
+                                            onClick={(e) => {
+                                                if (pathname === '/') {
+                                                    e.preventDefault();
+                                                    const element = document.querySelector('#pricing');
+                                                    if (element) {
+                                                        const offset = 80; // Navbar height + gap
+                                                        const elementPosition = (element as HTMLElement).offsetTop;
+                                                        const offsetPosition = elementPosition - offset;
+                                                        window.scrollTo({
+                                                            top: offsetPosition,
+                                                            behavior: 'smooth'
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                            className={`text-base font-bold transition-all hover:text-primary ${pathname === '/pricing' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}
+                                        >
+                                            Pricing
+                                        </Link>
                                         <Link href="/about" className={`text-base font-bold transition-all hover:text-primary ${pathname === '/about' ? 'text-primary' : 'text-muted-foreground hover:scale-105 active:scale-95'}`}>About</Link>
                                     </div>
                                 )}

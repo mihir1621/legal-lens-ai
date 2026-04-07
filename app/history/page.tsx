@@ -121,7 +121,7 @@ export default function HistoryPage() {
     return (
         <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-sans pb-24">
             <motion.div
-                className="container mx-auto px-4 pt-20 max-w-5xl"
+                className="container mx-auto px-4 pt-4 max-w-5xl"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
             >

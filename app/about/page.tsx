@@ -21,7 +21,7 @@ export default function AboutPage() {
     return (
         <div className="flex flex-col items-center overflow-x-hidden">
             {/* --- Hero Section --- */}
-            <section className="relative w-full overflow-hidden px-4 pt-20 pb-24 text-center md:pt-32 border-b border-border/40">
+            <section className="relative w-full overflow-hidden px-4 pt-4 pb-24 text-center md:pt-6 border-b border-border/40">
                 <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
 
                 <motion.div

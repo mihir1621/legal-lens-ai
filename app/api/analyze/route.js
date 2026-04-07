@@ -12,6 +12,17 @@ export async function POST(req) {
 
         const { text, userId, fileName } = await req.json();
 
+        if (!userId) {
+            return Response.json({ error: "UNAUTHORIZED: Please sign in to analyze documents." }, { status: 401 });
+        }
+
+        // Validate Usage Limits
+        const { canAnalyze, incrementUsage } = await import("@/lib/subscription");
+        const hasAccess = await canAnalyze(userId);
+        if (!hasAccess) {
+            return Response.json({ error: "LIMIT_REACHED: You have used all your analyses for this period. Please upgrade your plan." }, { status: 403 });
+        }
+
         if (!process.env.GROQ_API_KEY) {
             return Response.json({ error: "INTERNAL_ERROR: GROQ_API_KEY is missing in environment variables." }, { status: 500 });
         }
@@ -23,7 +34,7 @@ export async function POST(req) {
         const isVisionInput = text.startsWith('IMAGE_DATA:');
         let finalResult;
 
-        console.log(`[Analyzer] Processing: ${fileName} | Vision: ${isVisionInput}`);
+        console.log(`[Analyzer] Processing: ${fileName} | Vision: ${isVisionInput} | User: ${userId}`);
 
         const SCHEMA_GUIDE = `
         Return EXCLUSIVELY a JSON object where EVERY explanation is point-wise. NO paragraphs/essays.
@@ -148,6 +159,9 @@ export async function POST(req) {
                 how_to_obtain: Array.isArray(d.how_to_obtain) ? d.how_to_obtain : [d.how_to_obtain || "Official portal."]
             }))
         };
+
+        // Increment the user's usage since analysis succeeded
+        await incrementUsage(userId);
 
         return Response.json({ result: result });
 

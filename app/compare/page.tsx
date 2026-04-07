@@ -25,7 +25,7 @@ export default function CompareTeaserPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-sans flex flex-col items-center pt-24 px-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-sans flex flex-col items-center pt-4 px-6 relative overflow-hidden">
             
             {/* Ambient Background Effects */}
             <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none animate-pulse-subtle" />

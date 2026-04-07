@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Search, Zap, ShieldCheck } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Search, Zap, ShieldCheck, Crown } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DocumentSkeleton } from '@/components/DocumentSkeleton';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { extractTextFromFile } from '@/app/actions';
-import { analyzeLegalText } from '@/lib/analyze';
 import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { LegalAnalysis } from '@/lib/types';
+import Link from 'next/link';
 
 type ProcessingStep = 'idle' | 'extracting' | 'analyzing' | 'finalizing';
 
@@ -21,7 +21,27 @@ export default function DragDropUpload() {
     const [step, setStep] = useState<ProcessingStep>('idle');
     const [previewText, setPreviewText] = useState<string | null>(null);
     const [isDemoLoading, setIsDemoLoading] = useState(false);
+    const [subData, setSubData] = useState<any>(null);
+    const [isSubLoading, setIsSubLoading] = useState(true);
     const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                fetch(`/api/subscription?userId=${user.uid}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.subscription) {
+                            setSubData(data.subscription);
+                        }
+                    })
+                    .finally(() => setIsSubLoading(false));
+            } else {
+                setIsSubLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const isUploading = step !== 'idle';
 
@@ -99,6 +119,12 @@ export default function DragDropUpload() {
         const textToUse = manualText !== undefined ? manualText : text;
 
         if (!fileToUse && !textToUse) return;
+
+        if (subData && subData.usageCount >= subData.usageLimit) {
+            alert("You've reached your usage limit. Upgrade to continue.");
+            router.push('/pricing');
+            return;
+        }
 
         setStep('extracting');
         try {
@@ -271,6 +297,8 @@ export default function DragDropUpload() {
                         transition={{ duration: 0.4 }}
                         className="space-y-8"
                     >
+
+
                         <div className="space-y-4">
                             <div className="text-center space-y-2">
                                 <h2 className="text-3xl font-black text-white tracking-tight">Protect Your Future</h2>
@@ -345,6 +373,43 @@ export default function DragDropUpload() {
                                     {isDemoLoading ? "Analyzing Query..." : "Analyze Case"}
                                 </span>
                             </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Floating Usage Toast */}
+            <AnimatePresence>
+                {!isSubLoading && subData && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        className="fixed bottom-6 right-6 z-50 bg-[#0c0c0e]/90 border border-emerald-500/20 p-5 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.1)] backdrop-blur-2xl flex items-center gap-4 w-80"
+                    >
+                        <div className="bg-emerald-500/20 p-2.5 rounded-xl shrink-0 border border-emerald-500/10">
+                            <Crown className="text-emerald-400 h-5 w-5" />
+                        </div>
+                        <div className="flex-1 text-left">
+                            <h4 className="text-white font-bold text-sm tracking-tight flex items-center justify-between">
+                                {subData.planType.toUpperCase()} PLAN
+                                {subData.usageCount >= subData.usageLimit && (
+                                    <Link href="/pricing">
+                                        <span className="text-[9px] uppercase tracking-widest font-black text-red-400 hover:text-red-300 transition-colors cursor-pointer">
+                                            Upgrade
+                                        </span>
+                                    </Link>
+                                )}
+                            </h4>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">
+                                <span className="text-white font-bold">{subData.usageCount}</span> / {subData.usageLimit > 5000 ? "Unlimited" : subData.usageLimit} analyses used
+                            </p>
+                            <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden mt-2">
+                                <div 
+                                    className={cn("h-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.8)]", subData.usageCount >= subData.usageLimit ? "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]" : "bg-emerald-500")} 
+                                    style={{ width: `${Math.min((subData.usageCount / Math.max(subData.usageLimit, 1)) * 100, 100)}%` }} 
+                                />
+                            </div>
                         </div>
                     </motion.div>
                 )}

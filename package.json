@@ -11,6 +11,7 @@
     "server": "node server.js"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^9.1.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
@@ -31,10 +32,12 @@
     "pdf-parse": "^1.1.4",
     "pdfjs-dist": "^5.4.530",
     "qrcode.react": "^4.2.0",
+    "razorpay": "^2.9.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-dropzone": "^14.4.0",
     "recharts": "^3.8.1",
+    "stripe": "^22.0.0",
     "tailwind-merge": "^3.4.0",
     "translatte": "^3.0.1"
   },

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import MagnifyingHeroHeading from "@/components/hero/MagnifyingHeroHeading";
 import StatsCounter from "@/components/StatsCounter";
 import FeedbackSystem from "@/components/FeedbackSystem";
+import Pricing from "@/components/Pricing";
 
 const DOCUMENT_LIST = [
     {
@@ -611,7 +612,7 @@ export default function Home() {
 
                 {/* Trust & Security Section */}
                 <motion.section
-                    className="w-full py-40 bg-background relative overflow-hidden"
+                    className="w-full pt-40 pb-20 bg-background relative overflow-hidden"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     viewport={{ once: true }}
@@ -669,6 +670,8 @@ export default function Home() {
                         </div>
                     </div>
                 </motion.section>
+                
+                <Pricing />
 
                 {/* FAQ Section - Clean SaaS UI */}
                 <motion.section

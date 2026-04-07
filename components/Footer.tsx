@@ -27,6 +27,7 @@ export default function Footer() {
                             <li><Link href="/" className="hover:text-primary transition-colors">AI Summary</Link></li>
                             <li><Link href="/" className="hover:text-primary transition-colors">Risk Detector</Link></li>
                             <li><Link href="/" className="hover:text-primary transition-colors">Diff Engine</Link></li>
+                            <li><Link href="/pricing" className="hover:text-primary transition-colors">Pricing Plans</Link></li>
                         </ul>
                     </div>
 
