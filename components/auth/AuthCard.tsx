@@ -182,6 +182,17 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
         try {
             await runSafetyCheck('GOOGLE_LOGIN');
             const provider = new GoogleAuthProvider();
+            
+            // MOBILE OPTIMIZATION: Mobile browsers often block popups or drop session persistence.
+            // We proactively use Redirect for mobile and Popup for desktop.
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
+            
+            if (isMobile) {
+                console.log("[Auth] Mobile detected: using Redirect flow for stability.");
+                await signInWithRedirect(auth, provider);
+                return; // Redirect resets the page state
+            }
+
             try {
                 const result = await signInWithPopup(auth, provider);
                 
