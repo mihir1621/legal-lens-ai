@@ -1,5 +1,7 @@
 'use client';
-
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
 import { motion } from 'framer-motion';
 import { 
     Users, 
@@ -11,7 +13,8 @@ import {
     Search,
     ShieldCheck,
     MousePointer2,
-    BarChart
+    BarChart,
+    Loader2
 } from 'lucide-react';
 import { 
     LineChart, 
@@ -47,6 +50,51 @@ const TOP_FEATURES = [
 ];
 
 export default function AdminDashboard() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const router = useRouter();
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user && user.email === 'admin@gmail.com') {
+                setIsAdmin(true);
+            } else {
+                setIsAdmin(false);
+            }
+            setIsLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[70vh]">
+                <Loader2 className="animate-spin text-primary w-10 h-10 mb-4"/>
+                <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">Validating Clearance...</p>
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="min-h-[75vh] flex flex-col items-center justify-center text-center p-8 bg-[#050505] rounded-[3rem] border border-red-500/10 shadow-[0_0_100px_rgba(239,68,68,0.05)]">
+                <div className="w-24 h-24 rounded-full bg-red-500/10 flex items-center justify-center mb-8 border border-red-500/20">
+                    <ShieldCheck className="h-10 w-10 text-red-500" />
+                </div>
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">RESTRICTED SPACE</h1>
+                <p className="text-gray-500 max-w-sm font-medium mb-12 leading-relaxed">
+                    Your current credentials lack the administrative clearance required to view global platform telemetry.
+                </p>
+                <button 
+                    onClick={() => router.push('/')} 
+                    className="bg-white text-black px-10 py-4 rounded-xl font-black shadow-xl hover:bg-gray-200 transition-all hover:scale-105 active:scale-95"
+                >
+                    Return to Safe Zone
+                </button>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-12 max-w-7xl mx-auto">
             {/* Header section */}

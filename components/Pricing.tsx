@@ -114,10 +114,19 @@ export default function Pricing() {
             
             const unsubscribe = auth.onAuthStateChanged((user) => {
                 if (user && planToUpgrade) {
+                    const matchedPlan = PRICING_PLANS.find(p => p.name === planToUpgrade);
+                    const mockPaymentId = "stripe_checkout_" + Math.floor(Math.random()*10000);
+                    
                     fetch('/api/subscription/upgrade', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ userId: user.uid, planType: planToUpgrade })
+                        body: JSON.stringify({ 
+                            userId: user.uid, 
+                            planType: planToUpgrade,
+                            amount: Number(matchedPlan?.price.replace(/[^0-9]/g, '') || 0),
+                            gateway: 'Stripe',
+                            paymentId: mockPaymentId
+                        })
                     }).then(() => {
                         setPaymentSuccessData({
                             plan: planToUpgrade,
@@ -176,7 +185,13 @@ export default function Pricing() {
                                 await fetch('/api/subscription/upgrade', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ userId: auth.currentUser.uid, planType: selectedPlan.name })
+                                    body: JSON.stringify({ 
+                                        userId: auth.currentUser.uid, 
+                                        planType: selectedPlan.name,
+                                        amount: rawAmount,
+                                        gateway: 'Razorpay',
+                                        paymentId: response.razorpay_payment_id
+                                    })
                                 });
                             }
                             setPaymentSuccessData({

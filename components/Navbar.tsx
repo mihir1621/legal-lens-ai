@@ -88,6 +88,7 @@ export default function Navbar() {
                                 {isAdmin && pathname.startsWith('/admin') ? (
                                     <div className="flex items-center gap-4 sm:gap-6 mr-6 transition-all duration-500">
                                         <Link href="/admin" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Dashboard</Link>
+                                        <Link href="/admin/revenue" className={`text-base font-black transition-all hover:text-emerald-500 ${pathname === '/admin/revenue' ? 'text-emerald-500 hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'text-muted-foreground opacity-60'}`}>Revenue</Link>
                                         <Link href="/admin/analytics" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/analytics' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Analytics</Link>
                                         <Link href="/admin/users" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/users' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Users</Link>
                                         <Link href="/admin/feedback" className={`text-base font-black transition-all hover:text-primary ${pathname === '/admin/feedback' ? 'text-primary' : 'text-muted-foreground opacity-60'}`}>Feedback</Link>

@@ -15,7 +15,8 @@ import {
     Layout,
     Clock,
     ChevronRight,
-    Search
+    Search,
+    IndianRupee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth } from '@/lib/firebase';
@@ -23,6 +24,7 @@ import { signOut } from 'firebase/auth';
 
 const ADMIN_NAV_ITEMS = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+    { name: 'Revenue', icon: IndianRupee, href: '/admin/revenue' },
     { name: 'Analytics', icon: BarChart3, href: '/admin/analytics' },
     { name: 'Users', icon: Users, href: '/admin/users' },
     { name: 'Feedback', icon: MessageSquare, href: '/admin/feedback' },
