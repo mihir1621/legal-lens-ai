@@ -7,7 +7,7 @@ export async function POST(req: Request) {
 
         // 1. Initialize Razorpay (Fallback to dummy keys so the app doesn't crash if env isn't set)
         const razorpay = new Razorpay({
-            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_dummy",
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_dummy",
             key_secret: process.env.RAZORPAY_KEY_SECRET || "dummy_secret",
         });
 
