@@ -184,6 +184,17 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
             const provider = new GoogleAuthProvider();
             try {
                 const result = await signInWithPopup(auth, provider);
+                
+                // Fire silent email notification in background
+                fetch('/api/notify-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: result.user.email, 
+                        name: result.user.displayName 
+                    })
+                }).catch(e => console.warn("Failed to ping notification service:", e));
+
                 finalizeAuthSelection(result.user.email);
             } catch (popupErr: any) {
                 // FALLBACK: If popup is blocked, use redirect
