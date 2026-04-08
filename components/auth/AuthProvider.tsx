@@ -25,18 +25,22 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     }, []);
 
     useEffect(() => {
-        if (!loading) {
-            if (!user && !PUBLIC_PATHS.includes(pathname)) {
-                // Redirect to global login for all protected routes, including admin
-                router.push('/login');
-            } else if (user && AUTH_PATHS.includes(pathname)) {
-                if (user.email === 'admin@gmail.com') {
-                    router.push('/admin');
-                } else {
-                    router.push('/');
+        // We use a small stabilization delay to prevent race conditions 
+        // during Google Redirect handlers on mobile.
+        const timer = setTimeout(() => {
+            if (!loading) {
+                if (!user && !PUBLIC_PATHS.includes(pathname)) {
+                    router.push('/login');
+                } else if (user && AUTH_PATHS.includes(pathname)) {
+                    const target = user.email === 'admin@gmail.com' ? '/admin' : '/';
+                    if (pathname !== target) {
+                        router.push(target);
+                    }
                 }
             }
-        }
+        }, 100); // 100ms grace period for state reconciliation
+
+        return () => clearTimeout(timer);
     }, [user, loading, pathname, router]);
 
     if (loading) {

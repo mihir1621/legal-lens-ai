@@ -63,9 +63,13 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
         // Handle redirect result for Google Login
         const handleRedirect = async () => {
             try {
+                // Check if we're returning from a redirect
                 const result = await getRedirectResult(auth);
                 if (result) {
-                    finalizeAuthSelection(result.user.email);
+                    console.log("[Auth] Redirect Success:", result.user.email);
+                    // We let the global AuthProvider handle the navigation 
+                    // to prevent race conditions with router.push
+                    setLoading(true); 
                 }
             } catch (err: any) {
                 console.error("[Auth] Redirect Error:", err);
