@@ -53,8 +53,13 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
         }
     };
 
-    // Cleanup reCAPTCHA on unmount
+    const [isInAppBrowser, setIsInAppBrowser] = useState(false);
+
     useEffect(() => {
+        const ua = window.navigator.userAgent || window.navigator.vendor || (window as any).opera;
+        const isApp = /FBAN|FBAV|Instagram|WhatsApp|Line|Twitter|Pinterest|FB_IAB|FB4A|Messenger/i.test(ua);
+        setIsInAppBrowser(isApp);
+        
         // Handle redirect result for Google Login
         const handleRedirect = async () => {
             try {
@@ -183,16 +188,9 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
             await runSafetyCheck('GOOGLE_LOGIN');
             const provider = new GoogleAuthProvider();
             
-            // MOBILE OPTIMIZATION: Mobile browsers often block popups or drop session persistence.
-            // We proactively use Redirect for mobile and Popup for desktop.
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
-            
-            if (isMobile) {
-                console.log("[Auth] Mobile detected: using Redirect flow for stability.");
-                await signInWithRedirect(auth, provider);
-                return; // Redirect resets the page state
-            }
-
+            // INTELLECTUAL LOGIN STRATEGY: 
+            // 1. Try Popup first (works best for preserving local app state).
+            // 2. If Popup is blocked (common on mobile), escalate to Redirect.
             try {
                 const result = await signInWithPopup(auth, provider);
                 
@@ -208,10 +206,12 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
 
                 finalizeAuthSelection(result.user.email);
             } catch (popupErr: any) {
-                // FALLBACK: If popup is blocked, use redirect
+                // FALLBACK: If popup is blocked or cancelled by mobile OS, use redirect
                 if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/cancelled-popup-request') {
-                    console.log("[Auth] Popup blocked, falling back to redirect...");
+                    console.log("[Auth] Popup blocked/interrupted, escalating to Redirect flow...");
                     await signInWithRedirect(auth, provider);
+                } else if (popupErr.code === 'auth/unauthorized-domain') {
+                    throw popupErr; // Bubbles up to main error handler
                 } else {
                     throw popupErr;
                 }
@@ -219,13 +219,12 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
         } catch (err: any) {
             console.error("[Auth] Google Login Error:", err);
             if (err.code === 'auth/unauthorized-domain') {
-                setError(`Domain (${window.location.hostname}) is not authorized in Firebase Console -> Authentication -> Settings.`);
+                setError(`SECURITY BLOCK: The domain "${window.location.hostname}" is not authorized in Firebase Console. Please add it to: Authentication -> Settings -> Authorized Domains.`);
             } else {
-                setError(err.message);
+                setError(err.message || "An unexpected authentication error occurred.");
             }
             setLoading(false);
         }
-        // Note: We don't set loading(false) here if we're redirecting
     };
 
     const setupRecaptcha = () => {
@@ -394,6 +393,33 @@ export default function AuthCard({ initialMode = 'login' }: { initialMode?: Auth
                                 {mode === 'login' ? 'Sign in to access LegalLens' : mode === 'signup' ? 'Join the future of legal aid' : 'Verify your identity with OTP'}
                             </p>
                         </div>
+
+                        {isInAppBrowser && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="mb-6 p-5 bg-primary/10 border-2 border-primary/20 rounded-[20px] shadow-lg shadow-primary/5 space-y-3"
+                            >
+                                <div className="flex items-center gap-3 text-primary">
+                                    <div className="p-2 bg-primary/20 rounded-lg">
+                                        <Chrome className="h-4 w-4" />
+                                    </div>
+                                    <span className="text-xs font-black tracking-tight">SECURE BROWSER REQUIRED</span>
+                                </div>
+                                <p className="text-[10px] text-slate-400 font-medium leading-relaxed">
+                                    Google Sign-in is blocked inside this app (WhatsApp/Instagram) for security. Please open this link in <span className="text-white font-bold underline decoration-primary/50">Chrome</span> or <span className="text-white font-bold underline decoration-primary/50">Safari</span> to login.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href);
+                                        setError("Link copied! Paste it into Chrome or Safari.");
+                                    }}
+                                    className="w-full py-2.5 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-xl text-[10px] font-bold text-primary transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Mail className="h-3 w-3" /> Copy Link to Secure Login
+                                </button>
+                            </motion.div>
+                        )}
 
                         {error && (
                             <motion.div
